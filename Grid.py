@@ -4,7 +4,7 @@ from PIL import Image
 import cv2
 
 SIZE = 100
-RIDERS = 4
+RIDERS = 7
 DESTINATIONS = 100
 ACTION_SPACE = 4**RIDERS
 
@@ -61,11 +61,11 @@ class Grid:
 
     def initialize_grid(self):
         grid = [[ROAD_N for i in range(SIZE)] for i in range(SIZE)]
-        positions = get_random_tuple(DESTINATIONS + RIDERS)
+        positions = get_random_tuple(DESTINATIONS + 1)
         rider_positions = list()
+        position = positions.pop()
+        grid[position[0]][position[1]] = RIDER_N
         for i in range(RIDERS):
-            position = positions.pop()
-            grid[position[0]][position[1]] = RIDER_N
             rider_positions.append(position)
         
         for i in range(DESTINATIONS):
