@@ -107,7 +107,7 @@ class DQNAgent:
 
         model = Sequential()
 
-        model.add(Conv2D(256, (2, 2), input_shape=self.env.observation_space))
+        model.add(Conv2D(256, (3, 3), input_shape=self.env.observation_space))
         model.add(Activation("relu"))
         model.add(MaxPooling2D(2, 2))
         model.add(Dropout(0.2))
