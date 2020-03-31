@@ -2,6 +2,7 @@ import random
 import numpy as np
 from PIL import Image
 import cv2
+import Util as util
 
 # DIRECTIONS
 UP = 0
@@ -36,35 +37,13 @@ MEET_OTHER_RIDER = -3 # Rider in same box as another rider, this encourages them
 FAIL_IN_MAX_STEPS = -200 # Riders do not complete all deliveries in MAX_STEPS
 
 """
-    UTILITY FUNCTIONS
-"""
-# Generated unique random tuples
-def get_random_tuple(count):
-    unique_tuples = set()
-    while len(unique_tuples) < count:
-        row = random.randint(0, SIZE - 1)
-        col = random.randint(0, SIZE - 1)
-        unique_tuples.add((row, col))
-    return unique_tuples
-
-# Generate actions dictionary, each action comprises indivuadual actions of riders.
-def generate_actions_dict(riders):
-    action_dict = dict()
-    for i in range(ACTION_SPACE):
-        action_list = list()
-        for j in range(riders):
-            action_list.append(ACTIONS[(i // (len(ACTIONS)**(riders - j - 1)) % len(ACTIONS))])
-        action_dict[i] = action_list
-    return action_dict
-
-"""
     GRID CLASS
 """
 class Grid:
     def __init__(self):
         self.grid, self.rider_positions = self.initialize_grid()
         self.destinations = DESTINATIONS
-        self.action_space = generate_actions_dict(RIDERS)
+        self.action_space = util.generate_actions_dict(RIDERS, actions)
         self.observation_space = (SIZE, SIZE, 1)
         self.action_space_size = ACTION_SPACE
         self.steps = 0
@@ -80,7 +59,7 @@ class Grid:
     # Delivery positions and rider positions guaranteed to not be in the same box
     def initialize_grid(self):
         grid = [[ROAD_N for i in range(SIZE)] for i in range(SIZE)]
-        positions = get_random_tuple(DESTINATIONS + 1)
+        positions = util.get_random_tuple(DESTINATIONS + 1, SIZE)
         rider_positions = list()
         position = positions.pop()
         grid[position[0]][position[1]] = RIDER_N
