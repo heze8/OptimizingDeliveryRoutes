@@ -201,6 +201,11 @@ def generateRoads(grid):
     
     randomCoordinates = util.get_random_tuple(2, len(grid))
     firstRoad = Road(randomCoordinates.pop(), randomCoordinates.pop())
+
+    while firstRoad.length() <= len(grid) / 2: 
+        randomCoordinates = util.get_random_tuple(2, len(grid))
+        firstRoad = Road(randomCoordinates.pop(), randomCoordinates.pop())
+        
     pq.push((0, firstRoad))
 
     while not pq.isEmpty():
