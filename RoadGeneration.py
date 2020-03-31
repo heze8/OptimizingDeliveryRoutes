@@ -223,6 +223,16 @@ def generateGrid(width, height):
     grid = [[1 for x in range(width)] for y in range(height)] 
     return grid
 
+def getFreePositions(grid):
+    freePositions = []
+    for i in len(grid):
+        for j in len(grid[0]):
+            if grid[i][j] == 0:
+                freePositions.append((i, j))
+
+    return freePositions
+
+
 SIZE = 50
 
 roads = generateRoads(generateGrid(SIZE, SIZE))
