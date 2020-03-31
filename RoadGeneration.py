@@ -237,14 +237,9 @@ def getFreePositions(grid):
     return freePositions
 
 def generate_grid_with_roads(size):
-    return generateRoads(generateGrid(size, size))
-
-# SIZE = 50
-
-# roads = generateRoads(generateGrid(SIZE, SIZE))
-# print(roads)
-# with open("grid.txt", 'w') as f:
-#         for answer in roads:
-#             f.write(str(answer)+'\n')
-    
-
+    grid = generateRoads(generateGrid(size, size))
+    free_positions = getFreePositions(grid)
+    while len(free_positions) < ((size ** 2) / 2):
+        grid = generateRoads(generateGrid(size, size))
+        free_positions = getFreePositions(grid)
+    return grid, free_positions
