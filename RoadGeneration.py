@@ -239,7 +239,7 @@ def getFreePositions(grid):
 def generate_grid_with_roads(size):
     grid = generateRoads(generateGrid(size, size))
     free_positions = getFreePositions(grid)
-    while len(free_positions) < (3 * (size ** 2) / 4):
+    while len(free_positions) < ((size ** 2) / 2):
         grid = generateRoads(generateGrid(size, size))
         free_positions = getFreePositions(grid)
     return grid, free_positions
