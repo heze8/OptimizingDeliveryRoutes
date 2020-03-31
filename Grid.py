@@ -3,12 +3,22 @@ import numpy as np
 from PIL import Image
 import cv2
 
-SIZE = 10
-RIDERS = 3
-DESTINATIONS = 15
-ACTION_SPACE = 4**RIDERS
+# DIRECTIONS
+UP = 0
+DOWN = 1
+LEFT = 2
+RIGHT = 3
+STAY = 4
 
-MAX_STEPS = 200
+# Grid Settings
+SIZE = 7
+RIDERS = 3
+DESTINATIONS = 5
+ACTIONS = [UP, DOWN, LEFT, RIGHT]
+ACTION_SPACE = len(ACTIONS) ** RIDERS
+
+# Maximum number of steps before ending
+MAX_STEPS = 35
 
 # Objects in Grid
 RIDER_N = 2
@@ -18,16 +28,12 @@ COLOURS = {1: (255, 175, 0),
          2: (0, 255, 0),
          3: (0, 0, 255)}
 
-# DIRECTIONS
-UP = 0
-DOWN = 1
-LEFT = 2
-RIGHT = 3
-
 # REWARDS
-OOB = -10
-MAKE_DELIVERY = 100
-MOVE = -1
+OOB = -10 # Rider goes out of bounds (i.e. unpassable terrain / out of grid)
+MAKE_DELIVERY = 100 # Rider successfully steps on box with destination
+MOVE = -3 # Movement penalty, each rider will incur this penalty
+MEET_OTHER_RIDER = -3 # Rider in same box as another rider, this encourages them to split up (?)
+FAIL_IN_MAX_STEPS = -200 # Riders do not complete all deliveries in MAX_STEPS
 
 """
     UTILITY FUNCTIONS
@@ -41,14 +47,13 @@ def get_random_tuple(count):
         unique_tuples.add((row, col))
     return unique_tuples
 
+# Generate actions dictionary, each action comprises indivuadual actions of riders.
 def generate_actions_dict(riders):
     action_dict = dict()
-    actions = [UP, DOWN, LEFT, RIGHT]
-    action_space = 4**riders
-    for i in range(action_space):
+    for i in range(ACTION_SPACE):
         action_list = list()
         for j in range(riders):
-            action_list.append(actions[(i // (4**(riders - j - 1)) % 4)])
+            action_list.append(ACTIONS[(i // (len(ACTIONS)**(riders - j - 1)) % len(ACTIONS))])
         action_dict[i] = action_list
     return action_dict
 
@@ -70,6 +75,9 @@ class Grid:
         self.steps = 0
         return self.convert_grid_to_tensor()
 
+    # Initialise random positions for delivery
+    # Initialise one random position for riders to start in
+    # Delivery positions and rider positions guaranteed to not be in the same box
     def initialize_grid(self):
         grid = [[ROAD_N for i in range(SIZE)] for i in range(SIZE)]
         positions = get_random_tuple(DESTINATIONS + 1)
@@ -87,7 +95,7 @@ class Grid:
 
     # Execute action
     # Update grid and rider_positions
-    # Return rewards
+    # Return rewards and end?
     def step(self, action_n):
         self.steps += 1
         # First we "remove" the riders from the grid
@@ -105,15 +113,27 @@ class Grid:
                     reward += MAKE_DELIVERY
                     self.destinations -= 1
                 else: 
-                    reward += MOVE
+                    if action[i] != STAY: # Don't penalise if rider chooses to stay
+                        reward += MOVE
                 
-            self.grid[self.rider_positions[i][0]][self.rider_positions[i][1]] = RIDER_N
+                # if self.grid[self.rider_positions[i][0]][self.rider_positions[i][1]] == RIDER_N: # Penalise if rider meets another rider (encourage them to separate)
+                #     reward += MEET_OTHER_RIDER
+    
+                
+            self.grid[self.rider_positions[i][0]][self.rider_positions[i][1]] = RIDER_N # Set the updated rider position
         
-        end = self.destinations == 0 or self.steps > MAX_STEPS
+        end = self.destinations == 0
+
+        if not end and self.steps > MAX_STEPS: # If any delivery is not completed in max steps, then penalise
+            reward += FAIL_IN_MAX_STEPS
+            end = True
 
         return self.convert_grid_to_tensor(), reward, end
 
     def move(self, rider, direction):
+        if direction == STAY: # No need to change rider position
+            return False
+
         row = self.rider_positions[rider][0]
         col = self.rider_positions[rider][1]
         if direction == UP:
@@ -151,10 +171,11 @@ class Grid:
             string += "\n"
         return string
     
+    # Displays the grid in a beautiful window
     def render(self, delay=1):
         img = self.get_image()
-        img = img.resize((300, 300))  # resizing so we can see our agent in all its glory.
-        cv2.imshow("image", np.array(img))  # show it!
+        img = img.resize((300, 300))  
+        cv2.imshow("image", np.array(img))  
         cv2.waitKey(delay)
 
     def get_image(self):
@@ -165,7 +186,7 @@ class Grid:
                     env[i][j] = COLOURS[DESTINATION_N]
                 elif self.grid[i][j] == RIDER_N:
                     env[i][j] = COLOURS[RIDER_N]
-        img = Image.fromarray(env, 'RGB')  # reading to rgb. Apparently. Even tho color definitions are bgr. ???
+        img = Image.fromarray(env, 'RGB')
         return img
     
     def convert_grid_to_tensor(self):
@@ -182,6 +203,5 @@ class Grid:
 #     action_n = random.randint(0, ACTION_SPACE-1)
 #     state, reward, end = g.step(action_n)
 #     total_reward += reward
-#     g.render()
+#     g.render(50)
 # print(total_reward)
-

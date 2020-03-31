@@ -3,12 +3,12 @@ import numpy as np
 from Grid import Grid
 import os
 
-model = load_model("")
+model = load_model(".\\models\\128x64x64_20_steps___447.00max_-162.18avg_-669.00min__1585650074.model")
 
 g = Grid()
 end = False
 total_rewards = 0
-for i in range(1000):
+for i in range(100):
     total_rewards = 0
     end = False
     state = g.reset()
@@ -17,5 +17,5 @@ for i in range(1000):
         action = np.argmax(q_values)
         state, reward, end = g.step(action)
         total_rewards += reward
-        g.render(50)
+        g.render(100)
     print(total_rewards)

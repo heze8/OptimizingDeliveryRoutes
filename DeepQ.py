@@ -6,6 +6,9 @@ from collections import deque
 from Grid import Grid
 from tqdm import tqdm
 
+from tensorflow.compat.v1 import ConfigProto
+from tensorflow.compat.v1 import InteractiveSession
+
 import tensorflow as tf
 import numpy as np
 import random
@@ -14,9 +17,9 @@ import os
 
 # Q Learning settings 
 DISCOUNT = 0.99
-REPLAY_MEMORY_SIZE = 100000 # How many last steps to keep for model training
+REPLAY_MEMORY_SIZE = 300000 # How many last steps to keep for model training
 MIN_REPLAY_MEMORY_SIZE = 1000 # Minimum number of steps in a memory to start training
-MODEL_NAME = "16x2_RewardsChanged" 
+MODEL_NAME = "128x64x64_35_steps" 
 MINIBATCH_SIZE = 64 # How many steps (samples) to use for training
 MIN_REWARD = -200000 # FOR MODEL SAVE
 UPDATE_TARGET_EVERY = 5 # Terminal states (end of episodes)
@@ -37,6 +40,15 @@ MIN_EPSILON = 0.001
 AGGREGATE_STATS_EVERY = 50 # Episodes
 SHOW_PREVIEW = False
 
+# If don't want to use GPU
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+
+# GPU settings
+# config = ConfigProto()
+# config.gpu_options.allow_growth = True
+# session = InteractiveSession(config=config)
+
 # random.seed(1)
 # np.random.seed(1)
 
@@ -52,6 +64,7 @@ class ModifiedTensorBoard(TensorBoard):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.step = 1
+        self.log_dir = ".\\logs" # For windows
         self.writer = tf.summary.create_file_writer(self.log_dir)
         self._log_write_dir = os.path.join(self.log_dir, MODEL_NAME)
 
@@ -107,14 +120,15 @@ class DQNAgent:
 
         model = Sequential()
 
-        model.add(Conv2D(256, (3, 3), input_shape=self.env.observation_space))
+        # model.add(Conv2D(256, (3, 3), input_shape=self.env.observation_space))
+        model.add(Conv2D(128, (3, 3), input_shape=self.env.observation_space))
         model.add(Activation("relu"))
-        model.add(MaxPooling2D(2, 2))
-        model.add(Dropout(0.2))
+        # model.add(MaxPooling2D(2, 2))
+        # model.add(Dropout(0.2))
 
         model.add(Flatten())
         model.add(Dense(64, activation="relu")) 
-        # model.add(Dense(64, activation="relu"))
+        model.add(Dense(64, activation="relu")) 
 
         model.add(Dense(self.env.action_space_size, activation = "linear"))
         model.compile(loss="mse", optimizer=Adam(lr=LEARNING_RATE), metrics=['accuracy'])
