@@ -225,20 +225,21 @@ def generateGrid(width, height):
 
 def getFreePositions(grid):
     freePositions = []
-    for i in len(grid):
-        for j in len(grid[0]):
+    for i in range(0, len(grid) - 1):
+        for j in range(0, len(grid[0]) - 1):
             if grid[i][j] == 0:
                 freePositions.append((i, j))
-
     return freePositions
 
+def generate_grid_with_roads(size):
+    return generateRoads(generateGrid(size, size))
 
-SIZE = 50
+# SIZE = 50
 
-roads = generateRoads(generateGrid(SIZE, SIZE))
-print(roads)
-with open("grid.txt", 'w') as f:
-        for answer in roads:
-            f.write(str(answer)+'\n')
+# roads = generateRoads(generateGrid(SIZE, SIZE))
+# print(roads)
+# with open("grid.txt", 'w') as f:
+#         for answer in roads:
+#             f.write(str(answer)+'\n')
     
 

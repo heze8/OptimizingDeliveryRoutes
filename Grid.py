@@ -2,7 +2,7 @@ import random
 import numpy as np
 from PIL import Image
 import cv2
-import Util as util
+from RoadGeneration import generate_grid_with_roads, getFreePositions
 
 # DIRECTIONS
 UP = 0
@@ -22,12 +22,14 @@ ACTION_SPACE = len(ACTIONS) ** RIDERS
 MAX_STEPS = 35
 
 # Objects in Grid
-RIDER_N = 2
-DESTINATION_N = 1
+RIDER_N = 3
+DESTINATION_N = 2
+UNPASSABLE_N = 1
 ROAD_N = 0
-COLOURS = {1: (255, 175, 0),
-         2: (0, 255, 0),
-         3: (0, 0, 255)}
+COLOURS = { 0: (255, 255, 255),
+         1: (0, 0, 0),
+         2: (255, 175, 0),
+         3: (0, 255, 0)}
 
 # REWARDS
 OOB = -10 # Rider goes out of bounds (i.e. unpassable terrain / out of grid)
@@ -37,13 +39,33 @@ MEET_OTHER_RIDER = -3 # Rider in same box as another rider, this encourages them
 FAIL_IN_MAX_STEPS = -200 # Riders do not complete all deliveries in MAX_STEPS
 
 """
+    UTILITY FUNCTIONS
+"""
+# Generated unique random tuples
+def get_random_tuple(count, free_positions):
+    unique_tuples = set()
+    while len(unique_tuples) < count:
+        tup = random.choice(free_positions)
+        unique_tuples.add(tup)
+    return unique_tuples
+
+def generate_actions_dict(riders):
+    action_dict = dict()
+    for i in range(ACTION_SPACE):
+        action_list = list()
+        for j in range(riders):
+            action_list.append(ACTIONS[(i // (len(ACTIONS)**(riders - j - 1)) % len(ACTIONS))])
+        action_dict[i] = action_list
+    return action_dict
+
+"""
     GRID CLASS
 """
 class Grid:
     def __init__(self):
         self.grid, self.rider_positions = self.initialize_grid()
         self.destinations = DESTINATIONS
-        self.action_space = util.generate_actions_dict(RIDERS, actions)
+        self.action_space = generate_actions_dict(RIDERS)
         self.observation_space = (SIZE, SIZE, 1)
         self.action_space_size = ACTION_SPACE
         self.steps = 0
@@ -58,8 +80,9 @@ class Grid:
     # Initialise one random position for riders to start in
     # Delivery positions and rider positions guaranteed to not be in the same box
     def initialize_grid(self):
-        grid = [[ROAD_N for i in range(SIZE)] for i in range(SIZE)]
-        positions = util.get_random_tuple(DESTINATIONS + 1, SIZE)
+        grid = generate_grid_with_roads(SIZE)
+        free_positions = getFreePositions(grid)
+        positions = get_random_tuple(DESTINATIONS + 1, free_positions)
         rider_positions = list()
         position = positions.pop()
         grid[position[0]][position[1]] = RIDER_N
@@ -113,6 +136,8 @@ class Grid:
         if direction == STAY: # No need to change rider position
             return False
 
+        original_row = self.rider_positions[rider][0]
+        original_col = self.rider_positions[rider][1]
         row = self.rider_positions[rider][0]
         col = self.rider_positions[rider][1]
         if direction == UP:
@@ -161,10 +186,7 @@ class Grid:
         env = np.zeros((SIZE, SIZE, 3), dtype=np.uint8)  # starts an rbg of our size
         for i in range(SIZE):
             for j in range(SIZE):
-                if self.grid[i][j] == DESTINATION_N:
-                    env[i][j] = COLOURS[DESTINATION_N]
-                elif self.grid[i][j] == RIDER_N:
-                    env[i][j] = COLOURS[RIDER_N]
+                env[i][j] = COLOURS[self.grid[i][j]]
         img = Image.fromarray(env, 'RGB')
         return img
     
@@ -184,3 +206,7 @@ class Grid:
 #     total_reward += reward
 #     g.render(50)
 # print(total_reward)
+
+g = Grid()
+print(g)
+g.render(3000)
