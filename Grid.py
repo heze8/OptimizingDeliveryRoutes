@@ -135,9 +135,7 @@ class Grid:
     def move(self, rider, direction):
         if direction == STAY: # No need to change rider position
             return False
-
-        original_row = self.rider_positions[rider][0]
-        original_col = self.rider_positions[rider][1]
+            
         row = self.rider_positions[rider][0]
         col = self.rider_positions[rider][1]
         if direction == UP:
