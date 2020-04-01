@@ -59,7 +59,7 @@ class Road:
         
         return coordinates
 
-def localConstraints(road, grid):
+def localConstraints(road, grid, closeRatio):
     """
     The localConstraints() function evaluates a given road and modifies it 
     (snapped to local intersections, for instance), 
@@ -106,8 +106,7 @@ def localConstraints(road, grid):
         # no roads found closeby
         return (False, None)
 
-    gridRatio = len(grid) / 10
-
+    gridRatio = float(len(grid)) * closeRatio
     if not road.isValid(grid):
         return False
 
@@ -135,7 +134,7 @@ def localConstraints(road, grid):
 
     
 
-def globalGoals(road, grid):
+def globalGoals(road, grid, newRoadRatio, createP, createIterations):
     """    
     globalGoals() function uses a road to suggest new branching roads
     """    
@@ -143,7 +142,6 @@ def globalGoals(road, grid):
     newRoadRatio = 0.80
     newLength = road.length() * newRoadRatio
     createP = 0.8
-
     for pt in road.generateCoordinates(grid):
 
         x = pt[0]
@@ -153,7 +151,7 @@ def globalGoals(road, grid):
         newDx = reduce(dy) 
         newDy = reduce(-dx)
 
-        for i in range(3):
+        for i in range(createIterations):
             if random.random() > createP:
                 continue
 
@@ -182,7 +180,7 @@ def placeSegments(road, grid):
         grid[x][y] = 0
    
 
-def generateRoads(grid):
+def generateRoads(grid, closeRatio = 1/15, newRoadRatio = 0.8, createP = 0.8, createIterations = 5):
     """
     L-System algo
     initialize priority queue Q with a single entry: r(0, r0, q0)
@@ -202,7 +200,7 @@ def generateRoads(grid):
     randomCoordinates = util.get_random_tuple(2, len(grid))
     firstRoad = Road(randomCoordinates.pop(), randomCoordinates.pop())
 
-    while firstRoad.length() <= len(grid) / 2: 
+    while firstRoad.length() <= float(len(grid)) / 2.0: 
         randomCoordinates = util.get_random_tuple(2, len(grid))
         firstRoad = Road(randomCoordinates.pop(), randomCoordinates.pop())
         
@@ -210,11 +208,11 @@ def generateRoads(grid):
 
     while not pq.isEmpty():
         time, road = pq.pop()
-        accepted = localConstraints(road, grid)   
-
+        accepted = localConstraints(road, grid, closeRatio)   
         if accepted:
+
             placeSegments(road, grid)
-            for newRoad in globalGoals(road, grid):
+            for newRoad in globalGoals(road, grid, newRoadRatio, createP, createIterations):
                 pq.push((time + 1, newRoad))
 
     return grid
