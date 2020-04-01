@@ -41,13 +41,14 @@ AGGREGATE_STATS_EVERY = 100 # Episodes
 SHOW_PREVIEW = False
 
 # If don't want to use GPU
-import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+# import os
+# os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 # GPU settings
-# config = ConfigProto()
-# config.gpu_options.allow_growth = True
-# session = InteractiveSession(config=config)
+config = ConfigProto()
+config.gpu_options.per_process_gpu_memory_fraction = 0.9
+config.gpu_options.allow_growth = True
+session = InteractiveSession(config=config)
 
 # random.seed(1)
 # np.random.seed(1)
@@ -140,7 +141,7 @@ class DQNAgent:
         self.replay_memory.append(transition)
     
     def get_qs(self, state):
-        return self.model.predict(np.array(state).reshape(-1, *state.shape)/2)[0]
+        return self.model.predict(np.array(state).reshape(-1, *state.shape)/3)[0]
     
     def train(self, terminal_state, step):
         if len(self.replay_memory) < MIN_REPLAY_MEMORY_SIZE:
@@ -148,10 +149,10 @@ class DQNAgent:
 
         minibatch = random.sample(self.replay_memory, MINIBATCH_SIZE)
         
-        current_states = np.array([transition[0] for transition in minibatch])/2
+        current_states = np.array([transition[0] for transition in minibatch])/3
         current_qs_list = self.model.predict(current_states)
 
-        new_current_states = np.array([transition[3] for transition in minibatch])/2
+        new_current_states = np.array([transition[3] for transition in minibatch])/3
         future_qs_list = self.target_model.predict(new_current_states)
 
         X = []
@@ -170,7 +171,7 @@ class DQNAgent:
             X.append(current_state)
             y.append(current_qs)
         
-        self.model.fit(np.array(X)/2, np.array(y), batch_size = MINIBATCH_SIZE, verbose=0, shuffle=False, callbacks=[self.tensorboard] if terminal_state else None)
+        self.model.fit(np.array(X)/3, np.array(y), batch_size = MINIBATCH_SIZE, verbose=0, shuffle=False) #, callbacks=[self.tensorboard] if terminal_state else None)
 
         # updating to determine if we want to update target_model
         if terminal_state:

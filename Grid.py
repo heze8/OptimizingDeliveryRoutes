@@ -19,7 +19,7 @@ ACTIONS = [UP, DOWN, LEFT, RIGHT]
 ACTION_SPACE = len(ACTIONS) ** RIDERS
 
 # Maximum number of steps before ending
-MAX_STEPS = 70
+MAX_STEPS = 75
 
 # Objects in Grid
 RIDER_N = 3
@@ -32,11 +32,11 @@ COLOURS = { 0: (255, 255, 255),
          3: (0, 255, 0)}
 
 # REWARDS
-OOB = -10 # Rider goes out of bounds (i.e. unpassable terrain / out of grid)
-MAKE_DELIVERY = 100 # Rider successfully steps on box with destination
-MOVE = -3 # Movement penalty, each rider will incur this penalty
+OOB = -5 # Rider goes out of bounds (i.e. unpassable terrain / out of grid)
+MAKE_DELIVERY = 10 # Rider successfully steps on box with destination
+MOVE = -1 # Movement penalty, each rider will incur this penalty
 MEET_OTHER_RIDER = -3 # Rider in same box as another rider, this encourages them to split up (?)
-FAIL_IN_MAX_STEPS = -200 # Riders do not complete all deliveries in MAX_STEPS
+FAIL_IN_MAX_STEPS = -50 # Riders do not complete all deliveries in MAX_STEPS
 
 """
     UTILITY FUNCTIONS
