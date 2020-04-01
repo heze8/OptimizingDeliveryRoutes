@@ -3,7 +3,7 @@ from keras.layers import Dense, Dropout, Conv2D, MaxPooling2D, Activation, Flatt
 from keras.callbacks import TensorBoard
 from keras.optimizers import Adam
 from collections import deque
-from Grid import Grid
+from Grid import Grid, MAX_STEPS
 from tqdm import tqdm
 
 from tensorflow.compat.v1 import ConfigProto
@@ -19,7 +19,7 @@ import os
 DISCOUNT = 0.99
 REPLAY_MEMORY_SIZE = 300000 # How many last steps to keep for model training
 MIN_REPLAY_MEMORY_SIZE = 1000 # Minimum number of steps in a memory to start training
-MODEL_NAME = "128x64x64_35_steps" 
+MODEL_NAME = f"256x256x64x64_{MAX_STEPS}_steps" 
 MINIBATCH_SIZE = 64 # How many steps (samples) to use for training
 MIN_REWARD = -200000 # FOR MODEL SAVE
 UPDATE_TARGET_EVERY = 5 # Terminal states (end of episodes)
@@ -37,7 +37,7 @@ EPSILON_DECAY = 0.99975
 MIN_EPSILON = 0.001
 
 # Stats settings
-AGGREGATE_STATS_EVERY = 50 # Episodes
+AGGREGATE_STATS_EVERY = 100 # Episodes
 SHOW_PREVIEW = False
 
 # If don't want to use GPU
@@ -120,11 +120,13 @@ class DQNAgent:
 
         model = Sequential()
 
-        # model.add(Conv2D(256, (3, 3), input_shape=self.env.observation_space))
-        model.add(Conv2D(128, (3, 3), input_shape=self.env.observation_space))
+        model.add(Conv2D(256, (3, 3), input_shape=self.env.observation_space))
         model.add(Activation("relu"))
-        # model.add(MaxPooling2D(2, 2))
-        # model.add(Dropout(0.2))
+        model.add(Dropout(0.2))
+
+        model.add(Conv2D(256, (3, 3)))
+        model.add(Activation("relu"))
+        model.add(Dropout(0.2))
 
         model.add(Flatten())
         model.add(Dense(64, activation="relu")) 
@@ -181,8 +183,7 @@ class DQNAgent:
 agent = DQNAgent(Grid())
 
 # For Stats
-max_average_reward = -99999
-ep_rewards = [max_average_reward]
+ep_rewards = [MIN_REWARD]
 
 for episode in tqdm(range(1, EPISODES + 1), ascii=True, unit="episode"):
     agent.tensorboard.step = episode
@@ -221,11 +222,11 @@ for episode in tqdm(range(1, EPISODES + 1), ascii=True, unit="episode"):
         agent.tensorboard.update_stats(reward_avg=average_reward, reward_min=min_reward, reward_max=max_reward, epsilon=epsilon)
 
         # Save model, but only when min reward is greater or equal a set value
-        # if average_reward >= MIN_REWARD:
-        #     agent.model.save(f'models/{MODEL_NAME}__{max_reward:_>7.2f}max_{average_reward:_>7.2f}avg_{min_reward:_>7.2f}min__{int(time.time())}.model')
-        if average_reward > max_average_reward:
+        if average_reward >= MIN_REWARD:
             agent.model.save(f'models/{MODEL_NAME}__{max_reward:_>7.2f}max_{average_reward:_>7.2f}avg_{min_reward:_>7.2f}min__{int(time.time())}.model')
-            max_average_reward = average_reward
+        # if average_reward > max_average_reward:
+        #     agent.model.save(f'models/{MODEL_NAME}__{max_reward:_>7.2f}max_{average_reward:_>7.2f}avg_{min_reward:_>7.2f}min__{int(time.time())}.model')
+        #     max_average_reward = average_reward
         
     # Decay epsilon
     if epsilon > MIN_EPSILON:

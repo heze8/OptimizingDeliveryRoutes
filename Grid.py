@@ -12,14 +12,14 @@ RIGHT = 3
 STAY = 4
 
 # Grid Settings
-SIZE = 7
+SIZE = 10
 RIDERS = 3
-DESTINATIONS = 5
+DESTINATIONS = 15
 ACTIONS = [UP, DOWN, LEFT, RIGHT]
 ACTION_SPACE = len(ACTIONS) ** RIDERS
 
 # Maximum number of steps before ending
-MAX_STEPS = 35
+MAX_STEPS = 70
 
 # Objects in Grid
 RIDER_N = 3
@@ -80,8 +80,7 @@ class Grid:
     # Initialise one random position for riders to start in
     # Delivery positions and rider positions guaranteed to not be in the same box
     def initialize_grid(self):
-        grid = generate_grid_with_roads(SIZE)
-        free_positions = getFreePositions(grid)
+        grid, free_positions = generate_grid_with_roads(SIZE)
         positions = get_random_tuple(DESTINATIONS + 1, free_positions)
         rider_positions = list()
         position = positions.pop()
@@ -135,9 +134,12 @@ class Grid:
     def move(self, rider, direction):
         if direction == STAY: # No need to change rider position
             return False
-            
+
+        original_row = self.rider_positions[rider][0]
+        original_col = self.rider_positions[rider][1]
         row = self.rider_positions[rider][0]
         col = self.rider_positions[rider][1]
+
         if direction == UP:
             row -= 1
         elif direction == DOWN:
@@ -160,6 +162,10 @@ class Grid:
             oob = True
         elif col > SIZE - 1:
             col = SIZE - 1
+            oob = True
+        elif self.grid[row][col] == UNPASSABLE_N: # Step on unpassable terrain
+            row = original_row
+            col = original_col
             oob = True
         
         self.rider_positions[rider] = (row, col)
@@ -194,17 +200,18 @@ class Grid:
         return x
 
 # Random moving demo
+# from tqdm import tqdm
+# for i in tqdm(range(10000)):
+#     g = Grid()
+#     end = False
+#     total_reward = 0
+#     while not end:
+#         action_n = random.randint(0, ACTION_SPACE-1)
+#         state, reward, end = g.step(action_n)
+#         total_reward += reward
+#         # g.render(1)
+    # print(total_reward)
 
 # g = Grid()
-# end = False
-# total_reward = 0
-# while not end:
-#     action_n = random.randint(0, ACTION_SPACE-1)
-#     state, reward, end = g.step(action_n)
-#     total_reward += reward
-#     g.render(50)
-# print(total_reward)
-
-g = Grid()
-print(g)
-g.render(3000)
+# print(g)
+# g.render(3000)
