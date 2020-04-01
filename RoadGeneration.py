@@ -16,6 +16,8 @@ class Road:
         self.endPoint = endPoint
 
     def isValid(self, grid):
+        if self.length() == 0:
+            return False
         if self.startPoint[0] < len(grid) and self.startPoint[0] >= 0:
             if self.startPoint[1] < len(grid[0]) and self.startPoint[1] >= 0:
                 if self.endPoint[0] < len(grid) and self.endPoint[0] >= 0:
@@ -69,15 +71,17 @@ def localConstraints(road, grid, closeRatio):
         x, y = pos[0], pos[1]
         nbrs = []
 
-        for i in range(-1, 1):
+        for i in range(-1, 2):
             if i == 0:
-                for j in range(-1, 1):
-                    ny = y + j
-                    if ny < len(grid[0]) and ny >= 0:
-                        nbrs.append((x, ny))
-            nx = x + i
-            if nx < len(grid) and nx >= 0:
-                nbrs.append((nx, y))
+                for j in range(-1, 2):
+                    if j != 0:
+                        ny = y + j
+                        if ny < len(grid[0]) and ny >= 0:
+                            nbrs.append((x, ny))
+            else:
+                nx = x + i
+                if nx < len(grid) and nx >= 0:
+                    nbrs.append((nx, y))
 
         return nbrs                
 
@@ -88,11 +92,13 @@ def localConstraints(road, grid, closeRatio):
 
         while fringe:
             pos_x, pos_y, dist = fringe.pop(0)
-            if dist > branchLength:
-                return (False, None)
+
             if (pos_x, pos_y) in expanded:
                 continue
             expanded.add((pos_x, pos_y))
+
+            if dist > branchLength:
+                return (False, None)
 
             # if we find another road then exit
             if grid[pos_x][pos_y] == 0:
@@ -111,7 +117,7 @@ def localConstraints(road, grid, closeRatio):
         return False
 
     #if road is too short based on grid
-    if road.length() <= gridRatio:
+    if road.length() <= gridRatio * 2:
         return False
 
     #checks if the road is too near another road
@@ -142,10 +148,10 @@ def globalGoals(road, grid, newRoadRatio, createP, createIterations):
     newRoadRatio = 0.80
     newLength = road.length() * newRoadRatio
     createP = 0.8
-    for pt in road.generateCoordinates(grid):
 
+    for pt in road.generateCoordinates(grid):
         x = pt[0]
-        y = pt[0]
+        y = pt[1]
         dx =  road.endPoint[0] - x
         dy = road.endPoint[1] - y
         newDx = reduce(dy) 
@@ -180,7 +186,7 @@ def placeSegments(road, grid):
         grid[x][y] = 0
    
 
-def generateRoads(grid, closeRatio = 1/15, newRoadRatio = 0.8, createP = 0.8, createIterations = 5):
+def generateRoads(grid, closeRatio = 1/12, newRoadRatio = 0.8, createP = 0.8, createIterations = 3):
     """
     generateRoads generate roads on the grid with 0 as it's representation. 
 
@@ -218,8 +224,10 @@ def generateRoads(grid, closeRatio = 1/15, newRoadRatio = 0.8, createP = 0.8, cr
     while not pq.isEmpty():
         time, road = pq.pop()
         accepted = localConstraints(road, grid, closeRatio)   
-        if accepted:
+        if time > len(grid):
+            break
 
+        if accepted:
             placeSegments(road, grid)
             for newRoad in globalGoals(road, grid, newRoadRatio, createP, createIterations):
                 pq.push((time + 1, newRoad))
