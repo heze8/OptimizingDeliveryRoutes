@@ -22,14 +22,15 @@ ACTION_SPACE = len(ACTIONS) ** RIDERS
 MAX_STEPS = 75
 
 # Objects in Grid
-RIDER_N = 3
+RIDER_N = 1
 DESTINATION_N = 2
-UNPASSABLE_N = 1
 ROAD_N = 0
+UNPASSABLE_N = 3
+
 COLOURS = { 0: (255, 255, 255),
-         1: (0, 0, 0),
+         1: (0, 255, 0),
          2: (255, 175, 0),
-         3: (0, 255, 0)}
+         3: (0, 0, 0)}
 
 # REWARDS
 OOB = -5 # Rider goes out of bounds (i.e. unpassable terrain / out of grid)
