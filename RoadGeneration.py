@@ -182,6 +182,15 @@ def placeSegments(road, grid):
 
 def generateRoads(grid, closeRatio = 1/15, newRoadRatio = 0.8, createP = 0.8, createIterations = 5):
     """
+    generateRoads generate roads on the grid with 0 as it's representation. 
+
+    closeRatio is how close each road can be to each other with a lower number relaxing the limit. Ratio based on length of grid.
+    newRoadRatio is the length of a new road being generated based on an existing road. 
+        If less than one, shorter roads will branch of longer roads like in real life.
+        
+    createP is the probability in which roads are being created from a road.
+    createIterations is the amount of roads generated from each position of a road. 
+
     L-System algo
     initialize priority queue Q with a single entry: r(0, r0, q0)
 
