@@ -289,7 +289,3 @@ def generate_grid_with_roads(size, unpassable_n):
             if grid[row][col] == 1:
                 grid[row][col] = unpassable_n
     return grid, free_positions
-
-
-for i in range(1000):
-   print(generate_grid_with_roads(random.randrange(2, 51))[0])

@@ -17,27 +17,27 @@ import os
 
 # Q Learning settings 
 DISCOUNT = 0.99
-REPLAY_MEMORY_SIZE = 10000 # How many last steps to keep for model training
+REPLAY_MEMORY_SIZE = 50000 # How many last steps to keep for model training
 MIN_REPLAY_MEMORY_SIZE = 1000 # Minimum number of steps in a memory to start training
-MODEL_NAME = f"c32x32_{SIZE}x{SIZE}" 
+MODEL_NAME = f"c64xc64x64_{SIZE}x{SIZE}" 
 MINIBATCH_SIZE = 64 # How many steps (samples) to use for training
-MIN_REWARD = -250 # FOR MODEL SAVE
+MIN_REWARD = -50 # FOR MODEL SAVE
 UPDATE_TARGET_EVERY = 5 # Terminal states (end of episodes)
 
 # Neural network settings
 LEARNING_RATE = 0.001
 
-LOAD_MODEL = None
+LOAD_MODEL = "./models/c64xc64x64_5x5____15.32avg___25.00max__-21.00min__1585844050.model"
 # Environment settings
 EPISODES = 20000
 
 # Exploration settings
 epsilon = 1 # not a constant, going to be decayed
-EPSILON_DECAY = 0.99979
+EPSILON_DECAY = 0.99975
 MIN_EPSILON = 0.001
 
 # Stats settings
-AGGREGATE_STATS_EVERY = 100 # Episodes
+AGGREGATE_STATS_EVERY = 50 # Episodes
 SHOW_PREVIEW = False
 
 # If don't want to use GPU
@@ -121,13 +121,16 @@ class DQNAgent:
 
         model = Sequential()
 
-        model.add(Conv2D(32, (3, 3), input_shape=self.env.observation_space))
+        model.add(Conv2D(64, (3, 3), input_shape=self.env.observation_space))
         model.add(Activation("relu"))
-        # model.add(Dropout(0.1))
+        model.add(Dropout(0.1))
+
+        model.add(Conv2D(64, (3, 3)))
+        model.add(Activation("relu"))
+        model.add(Dropout(0.1))
 
         model.add(Flatten())
-        # model.add(Dense(64, activation="relu")) 
-        model.add(Dense(32, activation="relu")) 
+        model.add(Dense(64, activation="relu")) 
 
         model.add(Dense(self.env.action_space_size, activation = "linear"))
         model.compile(loss="mse", optimizer=Adam(lr=LEARNING_RATE), metrics=['accuracy'])

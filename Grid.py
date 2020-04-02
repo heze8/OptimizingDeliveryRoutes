@@ -19,10 +19,10 @@ ACTIONS = [UP, DOWN, LEFT, RIGHT]
 ACTION_SPACE = len(ACTIONS) ** RIDERS
 
 # Maximum number of steps before ending
-MAX_STEPS = 50
+MAX_STEPS = 100
 
 # Objects in Grid
-POSSIBLE_VALUES_IN_BOX = 10
+POSSIBLE_VALUES_IN_BOX = 3
 ROAD_N = 0
 DESTINATION_N = 1
 RIDER_N = [2, 3, 4, 5, 6, 7, 8, 9]
@@ -46,7 +46,7 @@ OOB = -1 # Rider goes out of bounds (i.e. unpassable terrain / out of grid)
 MAKE_DELIVERY = 10 # Rider successfully steps on box with destination
 MOVE = -1 # Movement penalty, each rider will incur this penalty
 MEET_OTHER_RIDER = -3 # Rider in same box as another rider, this encourages them to split up (?)
-FAIL_IN_MAX_STEPS = -50 # Riders do not complete all deliveries in MAX_STEPS
+FAIL_IN_MAX_STEPS = 0 # Riders do not complete all deliveries in MAX_STEPS
 
 """
     UTILITY FUNCTIONS
@@ -90,7 +90,9 @@ class Grid:
     # Initialise one random position for riders to start in
     # Delivery positions and rider positions guaranteed to not be in the same box
     def initialize_grid(self):
-        grid, free_positions = generate_grid_with_roads(SIZE, UNPASSABLE_N)
+        # grid, free_positions = generate_grid_with_roads(SIZE, UNPASSABLE_N)
+        grid = [[0 for i in range(SIZE)] for j in range(SIZE)]
+        free_positions = getFreePositions(grid)
         positions = get_random_tuple(DESTINATIONS + 1, free_positions)
         rider_positions = list()
         position = positions.pop()
@@ -135,7 +137,7 @@ class Grid:
         
         end = self.destinations == 0
 
-        if not end and self.steps > MAX_STEPS: # If any delivery is not completed in max steps, then penalise
+        if not end and self.steps == MAX_STEPS: # If any delivery is not completed in max steps, then penalise
             reward += FAIL_IN_MAX_STEPS
             end = True
 
@@ -192,7 +194,7 @@ class Grid:
     # Displays the grid in a beautiful window
     def render(self, delay=1):
         img = self.get_image()
-        img = img.resize((300, 300))  
+        img = cv2.resize(np.array(img), (300, 300), interpolation=cv2.INTER_NEAREST)  
         cv2.imshow("image", np.array(img))  
         cv2.waitKey(delay)
 
@@ -210,7 +212,6 @@ class Grid:
         return x
 
 # Random moving demo
-# from tqdm import tqdm
 # for i in range(10000):
 #     g = Grid()
 #     end = False
@@ -228,3 +229,5 @@ class Grid:
 # g.render(3000)
 # g = Grid()
 # g.render(3000)
+# g = Grid()
+# print(g)
