@@ -120,15 +120,26 @@ def localConstraints(road, grid, closeRatio):
     if road.length() <= gridRatio * 2:
         return False
 
+    roadCoor = road.generateCoordinates(grid)
+    count = -1 #-1 to not consider the first point which is always a road
+    for x, y in roadCoor:
+        if grid[x][y] == 0:
+            count += 1
+
+    #checks if road is making a new path
+    if count >= (closeRatio * len(roadCoor)):
+        return False
+
     #checks if the road is too near another road
     countClose = 0
 
-    roadCoor = road.generateCoordinates(grid)
+    # change this to checking against a list of roads instead because it's
+    #computationally expensive for large grids
     for pt in roadCoor:
         if isClose(pt, roadCoor, gridRatio, grid)[0]:
             countClose += 1
 
-    if countClose > (road.length() / 1.5):
+    if countClose > (float(len(roadCoor)) / 2):
         return False
 
     #if road can be extended to another road
@@ -186,7 +197,7 @@ def placeSegments(road, grid):
         grid[x][y] = 0
    
 
-def generateRoads(grid, closeRatio = 1/12, newRoadRatio = 0.8, createP = 0.8, createIterations = 3):
+def generateRoads(grid, closeRatio = 1/15, newRoadRatio = 0.8, createP = 0.8, createIterations = 2):
     """
     generateRoads generate roads on the grid with 0 as it's representation. 
 
@@ -245,8 +256,8 @@ def generateGrid(width, height):
 
 def getFreePositions(grid):
     freePositions = []
-    for i in range(0, len(grid) - 1):
-        for j in range(0, len(grid[0]) - 1):
+    for i in range(0, len(grid)):
+        for j in range(0, len(grid[0])):
             if grid[i][j] == 0:
                 freePositions.append((i, j))
     return freePositions
@@ -262,3 +273,7 @@ def generate_grid_with_roads(size, unpassable_n):
             if grid[row][col] == 1:
                 grid[row][col] = unpassable_n
     return grid, free_positions
+
+
+# for i in range(1000):
+#     print(generate_grid_with_roads(random.randrange(1, 51))[0])
