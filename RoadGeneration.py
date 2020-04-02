@@ -92,6 +92,8 @@ def localConstraints(road, grid, closeRatio, placedRoads):
         if branchLength <= 0.9:
             return (False, None)
         for x, y in placedRoads:
+            if (x, y) in roadPt: 
+                continue
             dx = x - pos[0]
             dy = y - pos[1]
             if math.sqrt(dx * dx + dy * dy) < branchLength:
