@@ -251,10 +251,14 @@ def getFreePositions(grid):
                 freePositions.append((i, j))
     return freePositions
 
-def generate_grid_with_roads(size):
+def generate_grid_with_roads(size, unpassable_n):
     grid = generateRoads(generateGrid(size, size))
     free_positions = getFreePositions(grid)
     while len(free_positions) < ((size ** 2) / 2):
         grid = generateRoads(generateGrid(size, size))
         free_positions = getFreePositions(grid)
+    for row in range(0, size):
+        for col in range(0, size):
+            if grid[row][col] == 1:
+                grid[row][col] = unpassable_n
     return grid, free_positions

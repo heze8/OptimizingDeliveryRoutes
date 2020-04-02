@@ -3,7 +3,7 @@ from keras.layers import Dense, Dropout, Conv2D, MaxPooling2D, Activation, Flatt
 from keras.callbacks import TensorBoard
 from keras.optimizers import Adam
 from collections import deque
-from Grid import Grid, MAX_STEPS
+from Grid import Grid, SIZE, POSSIBLE_VALUES_IN_BOX
 from tqdm import tqdm
 
 from tensorflow.compat.v1 import ConfigProto
@@ -18,14 +18,14 @@ import os
 # Q Learning settings 
 DISCOUNT = 0.99
 REPLAY_MEMORY_SIZE = 300000 # How many last steps to keep for model training
-MIN_REPLAY_MEMORY_SIZE = 1000 # Minimum number of steps in a memory to start training
-MODEL_NAME = f"256x256x64x64_{MAX_STEPS}_steps" 
+MIN_REPLAY_MEMORY_SIZE = 10000 # Minimum number of steps in a memory to start training
+MODEL_NAME = f"c32x32_{SIZE}x{SIZE}" 
 MINIBATCH_SIZE = 64 # How many steps (samples) to use for training
-MIN_REWARD = -200000 # FOR MODEL SAVE
+MIN_REWARD = -500 # FOR MODEL SAVE
 UPDATE_TARGET_EVERY = 5 # Terminal states (end of episodes)
 
 # Neural network settings
-LEARNING_RATE = 0.001
+LEARNING_RATE = 0.005
 
 LOAD_MODEL = None
 # Environment settings
@@ -45,10 +45,10 @@ SHOW_PREVIEW = False
 # os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 # GPU settings
-config = ConfigProto()
-config.gpu_options.per_process_gpu_memory_fraction = 0.9
-config.gpu_options.allow_growth = True
-session = InteractiveSession(config=config)
+# config = ConfigProto()
+# config.gpu_options.per_process_gpu_memory_fraction = 0.9
+# config.gpu_options.allow_growth = True
+# session = InteractiveSession(config=config)
 
 # random.seed(1)
 # np.random.seed(1)
@@ -65,7 +65,7 @@ class ModifiedTensorBoard(TensorBoard):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.step = 1
-        self.log_dir = ".\\logs" # For windows
+        # self.log_dir = ".\\logs" # For windows
         self.writer = tf.summary.create_file_writer(self.log_dir)
         self._log_write_dir = os.path.join(self.log_dir, MODEL_NAME)
 
@@ -121,17 +121,13 @@ class DQNAgent:
 
         model = Sequential()
 
-        model.add(Conv2D(256, (3, 3), input_shape=self.env.observation_space))
+        model.add(Conv2D(32, (3, 3), input_shape=self.env.observation_space))
         model.add(Activation("relu"))
-        model.add(Dropout(0.2))
-
-        model.add(Conv2D(256, (3, 3)))
-        model.add(Activation("relu"))
-        model.add(Dropout(0.2))
+        # model.add(Dropout(0.1))
 
         model.add(Flatten())
-        model.add(Dense(64, activation="relu")) 
-        model.add(Dense(64, activation="relu")) 
+        # model.add(Dense(64, activation="relu")) 
+        model.add(Dense(32, activation="relu")) 
 
         model.add(Dense(self.env.action_space_size, activation = "linear"))
         model.compile(loss="mse", optimizer=Adam(lr=LEARNING_RATE), metrics=['accuracy'])
@@ -141,7 +137,7 @@ class DQNAgent:
         self.replay_memory.append(transition)
     
     def get_qs(self, state):
-        return self.model.predict(np.array(state).reshape(-1, *state.shape)/3)[0]
+        return self.model.predict(np.array(state).reshape(-1, *state.shape)/POSSIBLE_VALUES_IN_BOX)[0]
     
     def train(self, terminal_state, step):
         if len(self.replay_memory) < MIN_REPLAY_MEMORY_SIZE:
@@ -149,10 +145,10 @@ class DQNAgent:
 
         minibatch = random.sample(self.replay_memory, MINIBATCH_SIZE)
         
-        current_states = np.array([transition[0] for transition in minibatch])/3
+        current_states = np.array([transition[0] for transition in minibatch])/POSSIBLE_VALUES_IN_BOX
         current_qs_list = self.model.predict(current_states)
 
-        new_current_states = np.array([transition[3] for transition in minibatch])/3
+        new_current_states = np.array([transition[3] for transition in minibatch])/POSSIBLE_VALUES_IN_BOX
         future_qs_list = self.target_model.predict(new_current_states)
 
         X = []
@@ -171,7 +167,7 @@ class DQNAgent:
             X.append(current_state)
             y.append(current_qs)
         
-        self.model.fit(np.array(X)/3, np.array(y), batch_size = MINIBATCH_SIZE, verbose=0, shuffle=False) #, callbacks=[self.tensorboard] if terminal_state else None)
+        self.model.fit(np.array(X)/POSSIBLE_VALUES_IN_BOX, np.array(y), batch_size = MINIBATCH_SIZE, verbose=0, shuffle=False) #, callbacks=[self.tensorboard] if terminal_state else None)
 
         # updating to determine if we want to update target_model
         if terminal_state:
@@ -223,11 +219,8 @@ for episode in tqdm(range(1, EPISODES + 1), ascii=True, unit="episode"):
         agent.tensorboard.update_stats(reward_avg=average_reward, reward_min=min_reward, reward_max=max_reward, epsilon=epsilon)
 
         # Save model, but only when min reward is greater or equal a set value
-        if average_reward >= MIN_REWARD:
-            agent.model.save(f'models/{MODEL_NAME}__{max_reward:_>7.2f}max_{average_reward:_>7.2f}avg_{min_reward:_>7.2f}min__{int(time.time())}.model')
-        # if average_reward > max_average_reward:
-        #     agent.model.save(f'models/{MODEL_NAME}__{max_reward:_>7.2f}max_{average_reward:_>7.2f}avg_{min_reward:_>7.2f}min__{int(time.time())}.model')
-        #     max_average_reward = average_reward
+        if average_reward >= MIN_REWARD and epsilon < 0.1:
+            agent.model.save(f'models/{MODEL_NAME}__{average_reward:_>7.2f}avg_{max_reward:_>7.2f}max_{min_reward:_>7.2f}min__{int(time.time())}.model')
         
     # Decay epsilon
     if epsilon > MIN_EPSILON:

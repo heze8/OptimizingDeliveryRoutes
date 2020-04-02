@@ -1,9 +1,9 @@
 from keras.models import Sequential, load_model
 import numpy as np
-from Grid import Grid
+from Grid import Grid, POSSIBLE_VALUES_IN_BOX
 import os
 
-model = load_model(".\\models\\128x64x64_20_steps___447.00max_-162.18avg_-669.00min__1585650074.model")
+model = load_model("path/to/model")
 
 g = Grid()
 end = False
@@ -13,9 +13,9 @@ for i in range(100):
     end = False
     state = g.reset()
     while not end:
-        q_values = model.predict(np.array(state).reshape(-1, *state.shape)/2)[0]
+        q_values = model.predict(np.array(state).reshape(-1, *state.shape)/POSSIBLE_VALUES_IN_BOX)[0]
         action = np.argmax(q_values)
         state, reward, end = g.step(action)
         total_rewards += reward
-        g.render(100)
+        g.render(10)
     print(total_rewards)

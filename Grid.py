@@ -12,16 +12,17 @@ RIGHT = 3
 STAY = 4
 
 # Grid Settings
-SIZE = 10
-RIDERS = 3
-DESTINATIONS = 15
+SIZE = 5
+RIDERS = 2
+DESTINATIONS = 3
 ACTIONS = [UP, DOWN, LEFT, RIGHT]
 ACTION_SPACE = len(ACTIONS) ** RIDERS
 
 # Maximum number of steps before ending
-MAX_STEPS = 75
+MAX_STEPS = 50
 
 # Objects in Grid
+POSSIBLE_VALUES_IN_BOX = 3
 RIDER_N = 1
 DESTINATION_N = 2
 ROAD_N = 0
@@ -33,7 +34,8 @@ COLOURS = { 0: (255, 255, 255),
          3: (0, 0, 0)}
 
 # REWARDS
-OOB = -5 # Rider goes out of bounds (i.e. unpassable terrain / out of grid)
+# OOB = -5 # Rider goes out of bounds (i.e. unpassable terrain / out of grid)
+OOB = 0 # Rider goes out of bounds (i.e. unpassable terrain / out of grid)
 MAKE_DELIVERY = 10 # Rider successfully steps on box with destination
 MOVE = -1 # Movement penalty, each rider will incur this penalty
 MEET_OTHER_RIDER = -3 # Rider in same box as another rider, this encourages them to split up (?)
@@ -81,7 +83,7 @@ class Grid:
     # Initialise one random position for riders to start in
     # Delivery positions and rider positions guaranteed to not be in the same box
     def initialize_grid(self):
-        grid, free_positions = generate_grid_with_roads(SIZE)
+        grid, free_positions = generate_grid_with_roads(SIZE, UNPASSABLE_N)
         positions = get_random_tuple(DESTINATIONS + 1, free_positions)
         rider_positions = list()
         position = positions.pop()
@@ -210,9 +212,10 @@ class Grid:
 #         action_n = random.randint(0, ACTION_SPACE-1)
 #         state, reward, end = g.step(action_n)
 #         total_reward += reward
-#         # g.render(1)
-    # print(total_reward)
+#         g.render(1)
+#     print(total_reward)
 
+print(Grid())
 # g = Grid()
 # print(g)
 # g.render(3000)
