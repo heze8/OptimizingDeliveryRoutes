@@ -17,15 +17,15 @@ import os
 
 # Q Learning settings 
 DISCOUNT = 0.99
-REPLAY_MEMORY_SIZE = 300000 # How many last steps to keep for model training
-MIN_REPLAY_MEMORY_SIZE = 10000 # Minimum number of steps in a memory to start training
+REPLAY_MEMORY_SIZE = 10000 # How many last steps to keep for model training
+MIN_REPLAY_MEMORY_SIZE = 1000 # Minimum number of steps in a memory to start training
 MODEL_NAME = f"c32x32_{SIZE}x{SIZE}" 
 MINIBATCH_SIZE = 64 # How many steps (samples) to use for training
-MIN_REWARD = -500 # FOR MODEL SAVE
+MIN_REWARD = -250 # FOR MODEL SAVE
 UPDATE_TARGET_EVERY = 5 # Terminal states (end of episodes)
 
 # Neural network settings
-LEARNING_RATE = 0.005
+LEARNING_RATE = 0.001
 
 LOAD_MODEL = None
 # Environment settings
@@ -33,7 +33,7 @@ EPISODES = 20000
 
 # Exploration settings
 epsilon = 1 # not a constant, going to be decayed
-EPSILON_DECAY = 0.99975
+EPSILON_DECAY = 0.99979
 MIN_EPSILON = 0.001
 
 # Stats settings
@@ -219,7 +219,7 @@ for episode in tqdm(range(1, EPISODES + 1), ascii=True, unit="episode"):
         agent.tensorboard.update_stats(reward_avg=average_reward, reward_min=min_reward, reward_max=max_reward, epsilon=epsilon)
 
         # Save model, but only when min reward is greater or equal a set value
-        if average_reward >= MIN_REWARD and epsilon < 0.1:
+        if average_reward >= MIN_REWARD:
             agent.model.save(f'models/{MODEL_NAME}__{average_reward:_>7.2f}avg_{max_reward:_>7.2f}max_{min_reward:_>7.2f}min__{int(time.time())}.model')
         
     # Decay epsilon

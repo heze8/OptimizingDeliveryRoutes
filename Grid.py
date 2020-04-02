@@ -13,7 +13,7 @@ STAY = 4
 
 # Grid Settings
 SIZE = 5
-RIDERS = 2
+RIDERS = 2 # MAXIMUM RIDERS IS 8.
 DESTINATIONS = 3
 ACTIONS = [UP, DOWN, LEFT, RIGHT]
 ACTION_SPACE = len(ACTIONS) ** RIDERS
@@ -22,20 +22,27 @@ ACTION_SPACE = len(ACTIONS) ** RIDERS
 MAX_STEPS = 50
 
 # Objects in Grid
-POSSIBLE_VALUES_IN_BOX = 3
-RIDER_N = 1
-DESTINATION_N = 2
+POSSIBLE_VALUES_IN_BOX = 10
 ROAD_N = 0
-UNPASSABLE_N = 3
+DESTINATION_N = 1
+RIDER_N = [2, 3, 4, 5, 6, 7, 8, 9]
+UNPASSABLE_N = 10
 
 COLOURS = { 0: (255, 255, 255),
-         1: (0, 255, 0),
-         2: (255, 175, 0),
-         3: (0, 0, 0)}
+         1: (0, 255, 255),
+         2: (255, 255, 0),
+         3: (255, 0, 0),
+         4: (255, 125, 125),
+         5: (255, 125, 0),
+         6: (255, 0, 125),
+         7: (255, 60, 180),
+         8: (255, 180, 60),
+         9: (255, 0, 255),
+         10: (0, 0, 0)}
 
 # REWARDS
 # OOB = -5 # Rider goes out of bounds (i.e. unpassable terrain / out of grid)
-OOB = 0 # Rider goes out of bounds (i.e. unpassable terrain / out of grid)
+OOB = -1 # Rider goes out of bounds (i.e. unpassable terrain / out of grid)
 MAKE_DELIVERY = 10 # Rider successfully steps on box with destination
 MOVE = -1 # Movement penalty, each rider will incur this penalty
 MEET_OTHER_RIDER = -3 # Rider in same box as another rider, this encourages them to split up (?)
@@ -87,8 +94,8 @@ class Grid:
         positions = get_random_tuple(DESTINATIONS + 1, free_positions)
         rider_positions = list()
         position = positions.pop()
-        grid[position[0]][position[1]] = RIDER_N
         for i in range(RIDERS):
+            grid[position[0]][position[1]] = RIDER_N[i] # Assign number to matrix with last rider's index
             rider_positions.append(position)
         
         for i in range(DESTINATIONS):
@@ -124,7 +131,7 @@ class Grid:
                 #     reward += MEET_OTHER_RIDER
     
                 
-            self.grid[self.rider_positions[i][0]][self.rider_positions[i][1]] = RIDER_N # Set the updated rider position
+            self.grid[self.rider_positions[i][0]][self.rider_positions[i][1]] = RIDER_N[i] # Set the updated rider position
         
         end = self.destinations == 0
 
@@ -190,7 +197,7 @@ class Grid:
         cv2.waitKey(delay)
 
     def get_image(self):
-        env = np.zeros((SIZE, SIZE, 3), dtype=np.uint8)  # starts an rbg of our size
+        env = np.zeros((SIZE, SIZE, 3), dtype=np.uint8) 
         for i in range(SIZE):
             for j in range(SIZE):
                 env[i][j] = COLOURS[self.grid[i][j]]
@@ -204,7 +211,7 @@ class Grid:
 
 # Random moving demo
 # from tqdm import tqdm
-# for i in tqdm(range(10000)):
+# for i in range(10000):
 #     g = Grid()
 #     end = False
 #     total_reward = 0
@@ -212,10 +219,12 @@ class Grid:
 #         action_n = random.randint(0, ACTION_SPACE-1)
 #         state, reward, end = g.step(action_n)
 #         total_reward += reward
-#         g.render(1)
+#         g.render(100)
 #     print(total_reward)
 
-print(Grid())
+# print(Grid())
 # g = Grid()
 # print(g)
+# g.render(3000)
+# g = Grid()
 # g.render(3000)

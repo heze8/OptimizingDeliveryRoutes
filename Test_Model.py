@@ -3,7 +3,7 @@ import numpy as np
 from Grid import Grid, POSSIBLE_VALUES_IN_BOX
 import os
 
-model = load_model("path/to/model")
+model = load_model("./models/c32x32_5x5___-95.85avg___27.00max_-152.00min__1585820841.model")
 
 g = Grid()
 end = False
