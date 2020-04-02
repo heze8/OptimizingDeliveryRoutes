@@ -2,6 +2,7 @@ import heapq
 import Util as util
 import random
 import math
+import sys
 
 def reduce(i):
     if i > 0:
@@ -14,6 +15,7 @@ class Road:
     def __init__(self, startPoint, endPoint):
         self.startPoint = startPoint
         self.endPoint = endPoint
+        self.seed = random.randrange(sys.maxsize) # so that we can get a deterministic random
 
     def isValid(self, grid):
         if self.length() == 0:
@@ -32,6 +34,7 @@ class Road:
         return math.sqrt(dx * dx + dy * dy)
 
     def generateCoordinates(self, grid):
+        random.seed(self.seed)
         currentPt = self.startPoint
         endPt = self.endPoint
         coordinates = [currentPt]
@@ -61,7 +64,7 @@ class Road:
         
         return coordinates
 
-def localConstraints(road, grid, closeRatio):
+def localConstraints(road, grid, closeRatio, placedRoads):
     """
     The localConstraints() function evaluates a given road and modifies it 
     (snapped to local intersections, for instance), 
@@ -85,32 +88,43 @@ def localConstraints(road, grid, closeRatio):
 
         return nbrs                
 
-    def isClose(pos, roadPt, branchLength, grid):
-        fringe = [(pos[0], pos[1], 0)]
-        expanded = set(roadPt)
-        expanded.remove(pos)
-
-        while fringe:
-            pos_x, pos_y, dist = fringe.pop(0)
-
-            if (pos_x, pos_y) in expanded:
+    def isClose(pos, roadPt, branchLength):
+        if branchLength <= 0.9:
+            return (False, None)
+        for x, y in placedRoads:
+            if (x, y) in roadPt: 
                 continue
-            expanded.add((pos_x, pos_y))
+            dx = x - pos[0]
+            dy = y - pos[1]
+            if math.sqrt(dx * dx + dy * dy) < branchLength:
+                 return (True, (x, y))
 
-            if dist > branchLength:
-                return (False, None)
-
-            # if we find another road then exit
-            if grid[pos_x][pos_y] == 0:
-                return (True, (pos_x, pos_y))
-                
-            # otherwise spread out from the location to its neighbours
-            nbrs = getLegalNeighbors((pos_x, pos_y), grid)
-            for nbr_x, nbr_y in nbrs:
-                fringe.append((nbr_x, nbr_y, dist+1))
-
-        # no roads found closeby
         return (False, None)
+        # fringe = [(pos[0], pos[1], 0)]
+        # expanded = set(roadPt)
+        # expanded.remove(pos)
+
+        # while fringe:
+        #     pos_x, pos_y, dist = fringe.pop(0)
+
+        #     if (pos_x, pos_y) in expanded:
+        #         continue
+        #     expanded.add((pos_x, pos_y))
+
+        #     if dist > branchLength:
+        #         return (False, None)
+
+        #     # if we find another road then exit
+        #     if grid[pos_x][pos_y] == 0:
+        #         return (True, (pos_x, pos_y))
+                
+        #     # otherwise spread out from the location to its neighbours
+        #     nbrs = getLegalNeighbors((pos_x, pos_y), grid)
+        #     for nbr_x, nbr_y in nbrs:
+        #         fringe.append((nbr_x, nbr_y, dist+1))
+
+        # # no roads found closeby
+        # return (False, None)
 
     gridRatio = float(len(grid)) * closeRatio
     if not road.isValid(grid):
@@ -127,7 +141,7 @@ def localConstraints(road, grid, closeRatio):
             count += 1
 
     #checks if road is making a new path
-    if count >= (closeRatio * len(roadCoor)):
+    if count > (closeRatio * len(roadCoor)):
         return False
 
     #checks if the road is too near another road
@@ -136,14 +150,14 @@ def localConstraints(road, grid, closeRatio):
     # change this to checking against a list of roads instead because it's
     #computationally expensive for large grids
     for pt in roadCoor:
-        if isClose(pt, roadCoor, gridRatio, grid)[0]:
+        if isClose(pt, roadCoor, gridRatio)[0]:
             countClose += 1
 
     if countClose > (float(len(roadCoor)) / 2):
         return False
 
     #if road can be extended to another road
-    ept = isClose(road.endPoint, roadCoor, 3 * gridRatio, grid)
+    ept = isClose(road.endPoint, roadCoor, 3 * gridRatio)
     if ept[0]:
         road.endPoint = ept[1]
 
@@ -188,13 +202,14 @@ def globalGoals(road, grid, newRoadRatio, createP, createIterations):
 
     return newRoads
 
-def placeSegments(road, grid):
+def placeSegments(road, placedRoads, grid):
     """    
     placeSegments() places the road onto the grid
     """    
     for pt in road.generateCoordinates(grid):
         x, y = pt
         grid[x][y] = 0
+        placedRoads.add(pt)
    
 
 def generateRoads(grid, closeRatio = 1/15, newRoadRatio = 0.8, createP = 0.8, createIterations = 2):
@@ -222,7 +237,8 @@ def generateRoads(grid, closeRatio = 1/15, newRoadRatio = 0.8, createP = 0.8, cr
             add r(ti + 1 + tj, rj, qj) to Q
     """
     pq = util.PriorityQueueWithFunction(lambda r: r[0]) 
-    
+    placedRoads = set()
+
     randomCoordinates = util.get_random_tuple(2, len(grid))
     firstRoad = Road(randomCoordinates.pop(), randomCoordinates.pop())
 
@@ -234,12 +250,12 @@ def generateRoads(grid, closeRatio = 1/15, newRoadRatio = 0.8, createP = 0.8, cr
 
     while not pq.isEmpty():
         time, road = pq.pop()
-        accepted = localConstraints(road, grid, closeRatio)   
+        accepted = localConstraints(road, grid, closeRatio, placedRoads)   
         if time > len(grid):
             break
 
         if accepted:
-            placeSegments(road, grid)
+            placeSegments(road, placedRoads, grid)
             for newRoad in globalGoals(road, grid, newRoadRatio, createP, createIterations):
                 pq.push((time + 1, newRoad))
 
@@ -264,9 +280,9 @@ def getFreePositions(grid):
 
 def generate_grid_with_roads(size, unpassable_n):
     grid = generateRoads(generateGrid(size, size))
-    free_positions = getFreePositions(grid)
+    free_positions = []
     while len(free_positions) < ((size ** 2) / 2):
-        grid = generateRoads(generateGrid(size, size))
+        grid = generateRoads(generateGrid(size, size), 0, 0.8, 0.9, 5)
         free_positions = getFreePositions(grid)
     for row in range(0, size):
         for col in range(0, size):
@@ -275,5 +291,5 @@ def generate_grid_with_roads(size, unpassable_n):
     return grid, free_positions
 
 
-# for i in range(1000):
-#     print(generate_grid_with_roads(random.randrange(1, 51))[0])
+for i in range(1000):
+   print(generate_grid_with_roads(random.randrange(2, 51))[0])
