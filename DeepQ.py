@@ -19,15 +19,15 @@ import os
 DISCOUNT = 0.99
 REPLAY_MEMORY_SIZE = 50000 # How many last steps to keep for model training
 MIN_REPLAY_MEMORY_SIZE = 1000 # Minimum number of steps in a memory to start training
-MODEL_NAME = f"c64xc64x64_{SIZE}x{SIZE}" 
+MODEL_NAME = f"c64xc64x64" 
 MINIBATCH_SIZE = 64 # How many steps (samples) to use for training
-MIN_REWARD = -50 # FOR MODEL SAVE
+MIN_REWARD = -100 # FOR MODEL SAVE
 UPDATE_TARGET_EVERY = 5 # Terminal states (end of episodes)
 
 # Neural network settings
 LEARNING_RATE = 0.001
 
-LOAD_MODEL = "./models/c64xc64x64_5x5____15.32avg___25.00max__-21.00min__1585844050.model"
+LOAD_MODEL = None
 # Environment settings
 EPISODES = 20000
 
@@ -118,6 +118,7 @@ class DQNAgent:
     def create_model(self):
         if LOAD_MODEL is not None:
             model = load_model(LOAD_MODEL)
+            return model
 
         model = Sequential()
 

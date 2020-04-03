@@ -4,8 +4,11 @@ import random
 from Grid import Grid, POSSIBLE_VALUES_IN_BOX
 import os
 from tqdm import tqdm
+import sys
 
-model = load_model("./models/c64xc64x64_5x5____19.56avg___27.00max____5.00min__1585846096.model")
+model = load_model("./models/c64xc64x64_5x5_lr-0.0005_epsilon-0.9998____16.20avg___27.00max_-129.00min__1585888952.model")
+
+random.seed(1)
 
 g = Grid()
 end = False
@@ -19,7 +22,7 @@ for i in tqdm(range(1000)):
         action = np.argmax(q_values)
         state, reward, end = g.step(action)
         total_rewards += reward
-        g.render(150)
+        g.render(int(sys.argv[1]))
     total.append(total_rewards)
 print(f"Min: {min(total)}")
 print(f"Max: {max(total)}")
