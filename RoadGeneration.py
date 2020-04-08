@@ -262,12 +262,12 @@ def generateRoads(grid, closeRatio = 1/15, newRoadRatio = 0.8, createP = 0.8, cr
     return grid
 
 
-def generateGrid(width, height):
+def generateGrid(width, height, unpassable_n = 1):
     """
     GenerateGrid returns a grid with generated roads depending on the width and height of the grid
     It uses a L-system algorithm to generate believable roads.
     """
-    grid = [[1 for x in range(width)] for y in range(height)] 
+    grid = [[unpassable_n for x in range(width)] for y in range(height)] 
     return grid
 
 def getFreePositions(grid):
@@ -278,14 +278,10 @@ def getFreePositions(grid):
                 freePositions.append((i, j))
     return freePositions
 
-def generate_grid_with_roads(size, unpassable_n):
-    grid = generateRoads(generateGrid(size, size))
+def generate_grid_with_roads(size, unpassable_n = 1):
+    grid = generateRoads(generateGrid(size, size, unpassable_n))
     free_positions = []
     while len(free_positions) < ((size ** 2) / 2):
         grid = generateRoads(generateGrid(size, size), 0, 0.8, 0.9, 5)
         free_positions = getFreePositions(grid)
-    for row in range(0, size):
-        for col in range(0, size):
-            if grid[row][col] == 1:
-                grid[row][col] = unpassable_n
     return grid, free_positions

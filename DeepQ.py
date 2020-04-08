@@ -29,7 +29,7 @@ LEARNING_RATE = 0.001
 
 LOAD_MODEL = None
 # Environment settings
-EPISODES = 20000
+EPISODES = 1000
 
 # Exploration settings
 epsilon = 1 # not a constant, going to be decayed
@@ -168,8 +168,8 @@ class DQNAgent:
             current_qs = current_qs_list[index]
             current_qs[action] = new_q
 
-            X.append(current_state)
-            y.append(current_qs)
+            X.append(current_state) #input
+            y.append(current_qs) #output
         
         self.model.fit(np.array(X)/POSSIBLE_VALUES_IN_BOX, np.array(y), batch_size = MINIBATCH_SIZE, verbose=0, shuffle=False) #, callbacks=[self.tensorboard] if terminal_state else None)
 

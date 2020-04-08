@@ -6,7 +6,7 @@ import os
 from tqdm import tqdm
 import sys
 
-model = load_model("./models/c64xc64x64_5x5_lr-0.0005_epsilon-0.9998____16.20avg___27.00max_-129.00min__1585888952.model")
+model = load_model("./models/c64xc64x64___-62.56avg___15.00max_-189.00min__1586315279.model")
 
 random.seed(1)
 
@@ -22,7 +22,7 @@ for i in tqdm(range(1000)):
         action = np.argmax(q_values)
         state, reward, end = g.step(action)
         total_rewards += reward
-        g.render(int(sys.argv[1]))
+        g.render(5)#int(sys.argv[1]))
     total.append(total_rewards)
 print(f"Min: {min(total)}")
 print(f"Max: {max(total)}")
