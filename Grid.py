@@ -68,6 +68,39 @@ def generate_actions_dict(riders):
         action_dict[i] = action_list
     return action_dict
 
+def getLegalAction(riderPos, actions, grid):
+    legal_actions = []
+    for direction in actions:
+        if direction == STAY: # No need to change rider position
+            legal_actions.append(STAY)
+            continue
+
+        row = riderPos[0]
+        col = riderPos[1]
+
+        if direction == UP:
+            row -= 1
+        elif direction == DOWN:
+            row += 1
+        elif direction == LEFT:
+            col -= 1
+        elif direction == RIGHT:
+            col += 1
+
+        SIZE = len(grid)
+
+        # Going out of boundaries
+        if row < 0 or row > SIZE - 1 or col < 0 or col > SIZE - 1:
+            continue
+        elif grid[row][col] == UNPASSABLE_N: # Step on unpassable terrain
+            continue
+        elif grid[row][col] in RIDER_N: # Step on other rider
+            continue
+
+        legal_actions.append(direction)
+
+    return legal_actions
+
 """
     GRID CLASS
 """

@@ -91,11 +91,11 @@ def generate_actions_dict(riders):
 
 
 # DIRECTIONS
-UP = 0
-DOWN = 1
-LEFT = 2
-RIGHT = 3
-STAY = 4
+UP = 1
+DOWN = 2
+LEFT = 3
+RIGHT = 4
+STAY = 0
 
 # Grid Settings
 SIZE_MAP = 5
@@ -135,9 +135,9 @@ MEET_OTHER_RIDER = -3 # Rider in same box as another rider, this encourages them
 FAIL_IN_MAX_STEPS = 0 # Riders do not complete all deliveries in MAX_STEPS
 
 """
-    DeliveryMap CLASS
+    MultiAgentDeliveryEnv CLASS
 """
-class DeliveryMap:
+class MultiAgentDeliveryEnv:
     def __init__(self):
         self.grid, self.rider_positions = self.initialize_grid()
         self.destinations = NUM_DELIVERY
