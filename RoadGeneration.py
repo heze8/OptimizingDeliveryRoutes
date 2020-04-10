@@ -282,6 +282,6 @@ def generate_grid_with_roads(size, unpassable_n = 1):
     grid = generateRoads(generateGrid(size, size, unpassable_n))
     free_positions = []
     while len(free_positions) < ((size ** 2) / 2):
-        grid = generateRoads(generateGrid(size, size), 0, 0.8, 0.9, 5)
+        grid = generateRoads(generateGrid(size, size, unpassable_n), 0, 0.8, 0.9, 5)
         free_positions = getFreePositions(grid)
     return grid, free_positions

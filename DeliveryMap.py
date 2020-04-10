@@ -99,9 +99,9 @@ STAY = 0
 
 # Grid Settings
 SIZE_MAP = 5
-NUM_RIDER = 2 # MAXIMUM RIDERS IS 8.
+NUM_RIDER = 1 # MAXIMUM RIDERS IS 8.
 NUM_DELIVERY = 3
-ACTIONS = [UP, DOWN, LEFT, RIGHT]
+ACTIONS = [STAY, UP, DOWN, LEFT, RIGHT]
 NUM_ACTION = len(ACTIONS)
 
 # Maximum number of steps before ending
@@ -128,11 +128,12 @@ COLOURS = { 0: (255, 255, 255),
 
 # REWARDS
 # OOB = -5 # Rider goes out of bounds (i.e. unpassable terrain / out of grid)
-OOB = -1 # Rider goes out of bounds (i.e. unpassable terrain / out of grid)
+OOB = -3 # Rider goes out of bounds (i.e. unpassable terrain / out of grid)
 MAKE_DELIVERY = 10 # Rider successfully steps on box with destination
-MOVE = -1 # Movement penalty, each rider will incur this penalty
+MOVE = -2 # Movement penalty, each rider will incur this penalty
 MEET_OTHER_RIDER = -3 # Rider in same box as another rider, this encourages them to split up (?)
-FAIL_IN_MAX_STEPS = 0 # Riders do not complete all deliveries in MAX_STEPS
+FAIL_IN_MAX_STEPS = -10 # Riders do not complete all deliveries in MAX_STEPS
+STAGNANT = -1
 
 """
     MultiAgentDeliveryEnv CLASS
@@ -141,7 +142,7 @@ class MultiAgentDeliveryEnv:
     def __init__(self):
         self.grid, self.rider_positions = self.initialize_grid()
         self.destinations = NUM_DELIVERY
-        self.action_space = generate_actions_dict(NUM_RIDER)
+        self.action_space = ACTIONS
         self.observation_space = (SIZE_MAP, SIZE_MAP, 1)
         self.action_space_size = NUM_ACTION
         self.steps = 0
@@ -183,16 +184,18 @@ class MultiAgentDeliveryEnv:
         action = self.action_space[action_n]
         reward = 0
         # Check if out of bounds or reached destination
-        for i in range(NUM_RIDER):
-            if self.move(i, action[i]):
+        for i in range(NUM_RIDER): # doesnt this mean it controls all the riders together
+            if self.move(i, action):
                 reward += OOB
-            else:
-                if self.grid[self.rider_positions[i][0]][self.rider_positions[i][1]] == DESTINATION_N:
-                    reward += MAKE_DELIVERY
-                    self.destinations -= 1
-                else: 
-                    if action[i] != STAY: # Don't penalise if rider chooses to stay
-                        reward += MOVE
+            elif self.grid[self.rider_positions[i][0]][self.rider_positions[i][1]] == DESTINATION_N:
+                reward += MAKE_DELIVERY
+                self.destinations -= 1
+            elif action != STAY: # Don't penalise if rider chooses to stay
+                reward += MOVE
+            elif action == STAY:
+                reward += STAGNANT
+
+
                 
                 # if self.grid[self.rider_positions[i][0]][self.rider_positions[i][1]] == RIDER_N: # Penalise if rider meets another rider (encourage them to separate)
                 #     reward += MEET_OTHER_RIDER
