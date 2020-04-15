@@ -1,14 +1,42 @@
 """
-Using neat to evolve .
+Using hyperneat to evolve .
 """
 
 from __future__ import print_function
 import os
 import neat
-import visualize
+#import visualize    
 import numpy as np
 from DeliveryMap import MultiAgentDeliveryEnv
+from pureples.shared.substrate import Substrate
+from pureples.shared.visualize import draw_net
+from pureples.es_hyperneat.es_hyperneat import ESNetwork
 
+SIZE = 10
+input_coordinates = []
+for i in range(SIZE):
+    x = i * 2./(SIZE - 1) - 1.
+    for j in range(SIZE):
+        y = j * 2./(SIZE - 1) - 1.
+        input_coordinates.append((x, y))
+
+UP = 1
+DOWN = 2
+LEFT = 3
+RIGHT = 4
+STAY = 0
+
+output_coordinates = [(0., 0.), (0., 1.), (0, -1.), (-1., 0.), (1., 0.)]
+sub = Substrate(input_coordinates, output_coordinates)
+
+params = {"initial_depth": 2,
+          "max_depth": 4,
+          "variance_threshold": 0.03,
+          "band_threshold": 0.3,
+          "iteration_level": 1,
+          "division_threshold": 0.5,
+          "max_weight": 8.0,
+          "activation": "sigmoid"}
 
 def train(net, render):
     episode_reward = 0 
@@ -39,10 +67,11 @@ def train(net, render):
 def eval_genomes(genomes, config):
     best_net = (None, -9999)
     for genome_id, genome in genomes:
-        net = neat.nn.RecurrentNetwork.create(genome, config)
+        cppn = neat.nn.RecurrentNetwork.create(genome, config)
+        network = ESNetwork(sub, cppn, params)
+        net = network.create_phenotype_network()
         episode_reward = 0
         runs = 3
-        genome.fitness = 0
 
         for i in range(runs):
             episode_reward += train(net, False)
@@ -74,17 +103,21 @@ def run(config_file):
 
     # Run for up to 300 generations.
     # pe = neat.ParallelEvaluator(multiprocessing.cpu_count(), eval_genomes)
-    winner = p.run(eval_genomes, 1000)
+    winner = p.run(eval_genomes, 300)
 
     # Display the winning genome.
     print('\nBest genome:\n{!s}'.format(winner))
 
     # Show output of the most fit genome against training data.
     print('\nOutput:')
-    winner_net = neat.nn.FeedForwardNetwork.create(winner, config)
+    cppn = neat.nn.RecurrentNetwork.create(winner, config)
+    network = ESNetwork(sub, cppn, params)
+    winner_net = network.create_phenotype_network(filename='es_hyperneat_winner.png') 
     input("Winner is found")
     for i in range(10):
         train(winner_net, True)
+
+    draw_net(cppn, filename="es_hyperneat")
 
     #visualize.draw_net(config, winner, True, node_names=node_names)
     #visualize.plot_stats(stats, ylog=False, view=True)

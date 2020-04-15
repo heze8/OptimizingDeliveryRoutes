@@ -98,7 +98,7 @@ RIGHT = 4
 STAY = 0
 
 # Grid Settings
-SIZE_MAP = 5
+SIZE_MAP = 10
 NUM_RIDER = 1 # MAXIMUM RIDERS IS 8.
 NUM_DELIVERY = 3
 ACTIONS = [STAY, UP, DOWN, LEFT, RIGHT]
@@ -114,8 +114,8 @@ DESTINATION_N = 1
 RIDER_N = [2, 3, 4, 5, 6, 7, 8, 9]
 UNPASSABLE_N = -1
 
-COLOURS = { 0: (255, 255, 255),
-         1: (0, 255, 255),
+COLOURS = { ROAD_N: (255, 255, 255),
+         DESTINATION_N: (0, 255, 255),
          2: (255, 255, 0),
          3: (255, 0, 0),
          4: (255, 125, 125),
@@ -124,13 +124,13 @@ COLOURS = { 0: (255, 255, 255),
          7: (255, 60, 180),
          8: (255, 180, 60),
          9: (255, 0, 255),
-         10: (0, 0, 0)}
+         UNPASSABLE_N: (0, 0, 0)}
 
 # REWARDS
 # OOB = -5 # Rider goes out of bounds (i.e. unpassable terrain / out of grid)
 OOB = -3 # Rider goes out of bounds (i.e. unpassable terrain / out of grid)
-MAKE_DELIVERY = 10 # Rider successfully steps on box with destination
-MOVE = -2 # Movement penalty, each rider will incur this penalty
+MAKE_DELIVERY = 130 # Rider successfully steps on box with destination
+MOVE = -1 # Movement penalty, each rider will incur this penalty
 MEET_OTHER_RIDER = -3 # Rider in same box as another rider, this encourages them to split up (?)
 FAIL_IN_MAX_STEPS = -10 # Riders do not complete all deliveries in MAX_STEPS
 STAGNANT = -1
@@ -190,7 +190,7 @@ class MultiAgentDeliveryEnv:
             elif self.grid[self.rider_positions[i][0]][self.rider_positions[i][1]] == DESTINATION_N:
                 reward += MAKE_DELIVERY
                 self.destinations -= 1
-            elif action != STAY: # Don't penalise if rider chooses to stay
+            elif action != STAY: 
                 reward += MOVE
             elif action == STAY:
                 reward += STAGNANT
@@ -211,6 +211,7 @@ class MultiAgentDeliveryEnv:
 
         return self.convert_grid_to_tensor(), reward, end
 
+    #ToDO move reward here
     def move(self, rider, direction):
         if direction == STAY: # No need to change rider position
             return False
@@ -262,7 +263,7 @@ class MultiAgentDeliveryEnv:
     # Displays the grid in a beautiful window
     def render(self, delay=1):
         img = self.get_image()
-        img = cv2.resize(np.array(img), (300, 300), interpolation=cv2.INTER_NEAREST)  
+        img = cv2.resize(np.array(img), (500, 500), interpolation=cv2.INTER_NEAREST)  
         cv2.imshow("image", np.array(img))  
         cv2.waitKey(delay)
 
