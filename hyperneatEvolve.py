@@ -35,7 +35,7 @@ sub = Substrate(input_coordinates, output_coordinates)
 params = {"initial_depth": 1,
           "max_depth": 4,
           "variance_threshold": 0.03,
-          "band_threshold": 0.3,
+          "band_threshold": 0.1,
           "iteration_level": 1,
           "division_threshold": 0.5,
           "max_weight": 15.0,
@@ -47,7 +47,7 @@ def train(net, network, render):
     env = MultiAgentDeliveryEnv()
     current_state = env.reset()
     done = False
-    
+    net.reset()
     
     while not done and step < 999:
         current_state = current_state.flatten()
@@ -81,7 +81,6 @@ def eval_genomes(genomes, config):
         genome.fitness = 0
 
         for i in range(runs):
-            net.reset()
             episode_reward += train(net, network, False)
 
         fitness = episode_reward/runs
@@ -89,9 +88,8 @@ def eval_genomes(genomes, config):
             best_net = (net, network, fitness)
         # Append episode reward to a list and log stats (every given number of episodes)
         genome.fitness += fitness
-    
-    best_net[0].reset()
-    train(best_net[0], best_net[1], True)
+    for i in range(4):
+        train(best_net[0], best_net[1], True)
 
 
 def run(config_file):
@@ -125,7 +123,7 @@ def run(config_file):
     winner_net = network.create_phenotype_network(filename='es_hyperneat_winner.png') 
     input("Winner is found")
     for i in range(10):
-        train(winner_net, True)
+        train(winner_net, network, True)
 
     draw_net(cppn, filename="es_hyperneat")
 
