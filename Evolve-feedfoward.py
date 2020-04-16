@@ -45,6 +45,7 @@ def eval_genomes(genomes, config):
         genome.fitness = 0
 
         for i in range(runs):
+            net.reset()
             episode_reward += train(net, False)
 
         fitness = episode_reward/runs

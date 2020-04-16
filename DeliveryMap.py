@@ -95,13 +95,12 @@ UP = 1
 DOWN = 2
 LEFT = 3
 RIGHT = 4
-STAY = 0
 
 # Grid Settings
-SIZE_MAP = 10
+SIZE_MAP = 6
 NUM_RIDER = 1 # MAXIMUM RIDERS IS 8.
 NUM_DELIVERY = 3
-ACTIONS = [STAY, UP, DOWN, LEFT, RIGHT]
+ACTIONS = [None, UP, DOWN, LEFT, RIGHT]
 NUM_ACTION = len(ACTIONS)
 
 # Maximum number of steps before ending
@@ -129,8 +128,8 @@ COLOURS = { ROAD_N: (255, 255, 255),
 # REWARDS
 # OOB = -5 # Rider goes out of bounds (i.e. unpassable terrain / out of grid)
 OOB = -3 # Rider goes out of bounds (i.e. unpassable terrain / out of grid)
-MAKE_DELIVERY = 130 # Rider successfully steps on box with destination
-MOVE = -1 # Movement penalty, each rider will incur this penalty
+MAKE_DELIVERY = 300 # Rider successfully steps on box with destination
+MOVE = 1 # Movement penalty, each rider will incur this penalty
 MEET_OTHER_RIDER = -3 # Rider in same box as another rider, this encourages them to split up (?)
 FAIL_IN_MAX_STEPS = -10 # Riders do not complete all deliveries in MAX_STEPS
 STAGNANT = -1
@@ -187,13 +186,14 @@ class MultiAgentDeliveryEnv:
         for i in range(NUM_RIDER): # doesnt this mean it controls all the riders together
             if self.move(i, action):
                 reward += OOB
+                self.steps = MAX_STEPS
             elif self.grid[self.rider_positions[i][0]][self.rider_positions[i][1]] == DESTINATION_N:
                 reward += MAKE_DELIVERY
                 self.destinations -= 1
-            elif action != STAY: 
+            else:# action != STAY: 
                 reward += MOVE
-            elif action == STAY:
-                reward += STAGNANT
+            # elif action == STAY:
+                # reward += STAGNANT
 
 
                 
@@ -213,8 +213,8 @@ class MultiAgentDeliveryEnv:
 
     #ToDO move reward here
     def move(self, rider, direction):
-        if direction == STAY: # No need to change rider position
-            return False
+        # if direction == STAY: # No need to change rider position
+            # return False
 
         original_row = self.rider_positions[rider][0]
         original_col = self.rider_positions[rider][1]

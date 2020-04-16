@@ -4,41 +4,44 @@ Using hyperneat to evolve .
 
 from __future__ import print_function
 import os
-import neat
-#import visualize    
+import neat as neat
+import visualize    
 import numpy as np
 from DeliveryMap import MultiAgentDeliveryEnv
 from pureples.shared.substrate import Substrate
 from pureples.shared.visualize import draw_net
 from pureples.es_hyperneat.es_hyperneat import ESNetwork
 
-SIZE = 10
+SIZE = 6
 input_coordinates = []
 for i in range(SIZE):
-    x = i * 2./(SIZE - 1) - 1.
+    x = i * 1.9/(SIZE - 1) - 0.95
     for j in range(SIZE):
-        y = j * 2./(SIZE - 1) - 1.
+        y = j * 1.9/(SIZE - 1) - 0.95
         input_coordinates.append((x, y))
 
+#bias
+input_coordinates.append((1.,1.))
 UP = 1
 DOWN = 2
 LEFT = 3
 RIGHT = 4
 STAY = 0
 
-output_coordinates = [(0., 0.), (0., 1.), (0, -1.), (-1., 0.), (1., 0.)]
+#include a bias
+output_coordinates = [(0., 1.), (0, -1.), (-1., 0.), (1., 0.)]
 sub = Substrate(input_coordinates, output_coordinates)
 
-params = {"initial_depth": 2,
+params = {"initial_depth": 1,
           "max_depth": 4,
           "variance_threshold": 0.03,
           "band_threshold": 0.3,
           "iteration_level": 1,
           "division_threshold": 0.5,
-          "max_weight": 8.0,
+          "max_weight": 15.0,
           "activation": "sigmoid"}
 
-def train(net, render):
+def train(net, network, render):
     episode_reward = 0 
     step = 1
     env = MultiAgentDeliveryEnv()
@@ -48,7 +51,10 @@ def train(net, render):
     
     while not done and step < 999:
         current_state = current_state.flatten()
-        action = np.argmax(net.activate(current_state))
+        current_state = np.append(current_state, [1]) #bias
+        for k in range(network.activations):
+            o = net.activate(current_state)
+        action = np.argmax(o) + 1
 
         new_state, reward, done = env.step(action)
         if render:
@@ -65,24 +71,27 @@ def train(net, render):
     return episode_reward
 
 def eval_genomes(genomes, config):
-    best_net = (None, -9999)
+    best_net = (None, None, -9999)
     for genome_id, genome in genomes:
         cppn = neat.nn.RecurrentNetwork.create(genome, config)
         network = ESNetwork(sub, cppn, params)
         net = network.create_phenotype_network()
         episode_reward = 0
-        runs = 3
+        runs = 10
+        genome.fitness = 0
 
         for i in range(runs):
-            episode_reward += train(net, False)
+            net.reset()
+            episode_reward += train(net, network, False)
 
         fitness = episode_reward/runs
         if fitness > best_net[1]:
-            best_net = (net, fitness)
+            best_net = (net, network, fitness)
         # Append episode reward to a list and log stats (every given number of episodes)
         genome.fitness += fitness
     
-    # train(best_net[0], True)
+    best_net[0].reset()
+    train(best_net[0], best_net[1], True)
 
 
 def run(config_file):
@@ -92,7 +101,8 @@ def run(config_file):
                          config_file)
 
     # Create the population, which is the top-level object for a NEAT run.
-    p = neat.Population(config)
+    #p = neat.Population(config)
+    p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-5')
 
     # Add a stdout reporter to show progress in the terminal.
     p.add_reporter(neat.StdOutReporter(True))
@@ -142,7 +152,10 @@ if __name__ == '__main__':
     # stats = neat.StatisticsReporter()
     # p.add_reporter(stats)
     # p.add_reporter(neat.Checkpointer(5))
-    # p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-290')
+    # p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-24')
     # winner = p.run(eval_genomes, 1)
-    # winner_net = neat.nn.FeedForwardNetwork.create(winner, config)
-    # train(winner_net,True)
+    # cppn = neat.nn.RecurrentNetwork.create(winner, config)
+    # network = ESNetwork(sub, cppn, params)
+    # winner_net = network.create_phenotype_network(filename='es_hyperneat_winner.png') 
+    # for i in range(10):
+    #     train(winner_net, True)
