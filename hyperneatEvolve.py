@@ -84,7 +84,7 @@ def eval_genomes(genomes, config):
             episode_reward += train(net, network, False)
 
         fitness = episode_reward/runs
-        if fitness > best_net[1]:
+        if fitness > best_net[2]:
             best_net = (net, network, fitness)
         # Append episode reward to a list and log stats (every given number of episodes)
         genome.fitness += fitness
@@ -100,7 +100,7 @@ def run(config_file):
 
     # Create the population, which is the top-level object for a NEAT run.
     #p = neat.Population(config)
-    p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-5')
+    p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-14')
 
     # Add a stdout reporter to show progress in the terminal.
     p.add_reporter(neat.StdOutReporter(True))
