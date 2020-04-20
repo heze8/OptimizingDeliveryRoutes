@@ -7,11 +7,11 @@ import os
 import neat as neat
 import visualize    
 import numpy as np
-import multiprocessing
-from DeliveryMap import MultiAgentDeliveryEnv
+from DeliveryMapAuto import MultiAgentDeliveryEnv
 from pureples.shared.substrate import Substrate
 from pureples.shared.visualize import draw_net
 from pureples.es_hyperneat.es_hyperneat import ESNetwork
+import random
 
 SIZE = 6
 input_coordinates = []
@@ -21,22 +21,19 @@ for i in range(SIZE):
         y = j * 1.9/(SIZE - 1) - 0.95
         input_coordinates.append((x, y))
 
-#bias
-input_coordinates.append((1.,1.))
-UP = 1
-DOWN = 2
-LEFT = 3
-RIGHT = 4
-STAY = 0
+
+input_coordinates.append((0., 1.)) #distance
+input_coordinates.append((1.,1.)) #bias
+
 
 #include a bias
-output_coordinates = [(0., 1.), (0, -1.), (-1., 0.), (1., 0.)]
+output_coordinates = [(0., -1.)]
 sub = Substrate(input_coordinates, output_coordinates)
 
 params = {"initial_depth": 1,
           "max_depth": 4,
           "variance_threshold": 0.03,
-          "band_threshold": 0.1,
+          "band_threshold": 0.3,
           "iteration_level": 1,
           "division_threshold": 0.5,
           "max_weight": 15.0,
@@ -51,15 +48,17 @@ def train(net, network, render):
     net.reset()
     
     while not done and step < 999:
-        current_state = current_state.flatten()
-        current_state = np.append(current_state, [1]) #bias
-        for k in range(network.activations):
-            o = net.activate(current_state)
-        action = np.argmax(o) + 1
+        numAction = []
+        for action in current_state:
+            action = np.append(action, [1]) #bias
+            for k in range(network.activations):
+                o = net.activate(action)
+            numAction.append(o)
 
+        action = np.argmax(numAction)
         new_state, reward, done = env.step(action)
         if render:
-            env.render(100) 
+            env.render(500) 
             print(action)
         episode_reward += reward
 
@@ -71,14 +70,20 @@ def train(net, network, render):
     # Append episode reward to a list and log stats (every given number of episodes)
     return episode_reward
 
+
+
+
+def setSeed(seeds):
+    seeds = [random.randrange(0, 99999999999999) for i in range(runs)]
+
 def eval_genome(genome, config):
     cppn = neat.nn.RecurrentNetwork.create(genome, config)
     network = ESNetwork(sub, cppn, params)
     net = network.create_phenotype_network()
     episode_reward = 0
-    runs = 10
     
     for i in range(runs):
+        random.seed(seeds[i])
         episode_reward += train(net, network, False)
 
     fitness = episode_reward/runs
@@ -88,15 +93,18 @@ def eval_genome(genome, config):
 
 def eval_genomes(genomes, config):
     best_net = (None, None, -9999)
+    runs = 10
+    seeds = [random.randrange(0, 99999999999999) for i in range(runs)]
+
     for genome_id, genome in genomes:
         cppn = neat.nn.RecurrentNetwork.create(genome, config)
         network = ESNetwork(sub, cppn, params)
         net = network.create_phenotype_network()
         episode_reward = 0
-        runs = 10
         genome.fitness = 0
 
         for i in range(runs):
+            random.seed(seeds[i])
             episode_reward += train(net, network, False)
 
         fitness = episode_reward/runs
@@ -115,8 +123,8 @@ def run(config_file):
                          config_file)
 
     # Create the population, which is the top-level object for a NEAT run.
-    # p = neat.Population(config)
-    p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-4')
+    p = neat.Population(config)
+    # p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-4')
 
     # Add a stdout reporter to show progress in the terminal.
     p.add_reporter(neat.StdOutReporter(True))
@@ -126,8 +134,7 @@ def run(config_file):
     #p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-299')
 
     # Run for up to 300 generations.
-    pe = neat.ParallelEvaluator(multiprocessing.cpu_count(), eval_genome)
-    winner = p.run(pe.evaluate, 300)
+    winner = p.run(eval_genomes, 300)
 
     # Display the winning genome.
     print('\nBest genome:\n{!s}'.format(winner))
