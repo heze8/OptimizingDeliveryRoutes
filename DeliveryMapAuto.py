@@ -206,7 +206,9 @@ class MultiAgentDeliveryEnv:
         end = self.destinations == 0
 
         if self.steps % 2 == 0:
-            self.destinationPos.append(get_random_tuple(1, getFreePositions(self.grid)).pop())
+            newDes = get_random_tuple(1, getFreePositions(self.grid)).pop()
+            self.destinationPos.append(newDes)
+            self.grid[newDes[0]][newDes[1]] = 1
 
         return self.returnStateInfo(), reward, end
            
