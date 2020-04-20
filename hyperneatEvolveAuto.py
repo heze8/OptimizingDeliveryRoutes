@@ -128,6 +128,7 @@ def run(config_file):
     stats = neat.statistics.StatisticsReporter()
     pop.add_reporter(stats)
     pop.add_reporter(neat.reporting.StdOutReporter(True))
+    pop.add_reporter(neat.Checkpointer(999))
     #p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-299')
 
     # Run for up to 300 generations.
