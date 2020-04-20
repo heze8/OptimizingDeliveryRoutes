@@ -118,7 +118,7 @@ def run(config_file):
     # Load configuration.
     config = neat.config.Config(neat.genome.DefaultGenome, neat.reproduction.DefaultReproduction,
                             neat.species.DefaultSpeciesSet, neat.stagnation.DefaultStagnation,
-                            'config_cppn_xor')
+                            config_file)
 
     # Create the population, which is the top-level object for a NEAT run.
     #p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-15')
