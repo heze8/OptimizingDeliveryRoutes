@@ -4,16 +4,21 @@ Using hyperneat to evolve .
 
 from __future__ import print_function
 import os
-import neat as neat
+import neat
+import neat.nn
 import visualize    
 import numpy as np
+try:
+   import cPickle as pickle
+except:
+   import pickle
 from DeliveryMapAuto import MultiAgentDeliveryEnv
 from pureples.shared.substrate import Substrate
 from pureples.shared.visualize import draw_net
 from pureples.es_hyperneat.es_hyperneat import ESNetwork
 import random
 
-SIZE = 6
+SIZE = 7
 input_coordinates = []
 for i in range(SIZE):
     x = i * 1.9/(SIZE - 1) - 0.95
@@ -21,23 +26,24 @@ for i in range(SIZE):
         y = j * 1.9/(SIZE - 1) - 0.95
         input_coordinates.append((x, y))
 
-
-input_coordinates.append((0., 1.)) #distance
-input_coordinates.append((1.,1.)) #bias
-
+input_coordinates.append((0.0, -1.0)) #distance
+input_coordinates.append((1.0, 1.0)) #bias
 
 #include a bias
-output_coordinates = [(0., -1.)]
+output_coordinates = [(0.0, 1.0)] #must me this coor or it bugs out
 sub = Substrate(input_coordinates, output_coordinates)
 
-params = {"initial_depth": 1,
-          "max_depth": 4,
-          "variance_threshold": 0.3,
+params = {"initial_depth": 2,
+          "max_depth": 3,
+          "variance_threshold": 0.03,
           "band_threshold": 0.3,
           "iteration_level": 1,
           "division_threshold": 0.5,
-          "max_weight": 15.0,
+          "max_weight": 5.0,
           "activation": "sigmoid"}
+
+def convert(list): 
+    return tuple(float(i)/2 for i in list) 
 
 def train(net, network, render, env = MultiAgentDeliveryEnv()):
     episode_reward = 0 
@@ -50,10 +56,10 @@ def train(net, network, render, env = MultiAgentDeliveryEnv()):
         numAction = []
         for action in current_state:
             action = np.append(action, [1]) #bias
+            action = convert(action)
             for k in range(network.activations):
                 o = net.activate(action)
             numAction.append(o)
-
         action = np.argmax(numAction)
         new_state, reward, done = env.step(action)
         if render:
@@ -69,14 +75,8 @@ def train(net, network, render, env = MultiAgentDeliveryEnv()):
     # Append episode reward to a list and log stats (every given number of episodes)
     return episode_reward
 
-
-
-
-def setSeed(seeds):
-    seeds = [random.randrange(0, 99999999999999) for i in range(runs)]
-
 def eval_genome(genome, config):
-    cppn = neat.nn.RecurrentNetwork.create(genome, config)
+    cppn = neat.nn.FeedForwardNetwork.create(genome, config)
     network = ESNetwork(sub, cppn, params)
     net = network.create_phenotype_network()
     episode_reward = 0
@@ -95,7 +95,8 @@ def eval_genomes(genomes, config):
     environments = [MultiAgentDeliveryEnv() for i in range(runs)]
 
     for genome_id, genome in genomes:
-        cppn = neat.nn.RecurrentNetwork.create(genome, config)
+
+        cppn = neat.nn.FeedForwardNetwork.create(genome, config)
         network = ESNetwork(sub, cppn, params)
         net = network.create_phenotype_network()
         episode_reward = 0
@@ -115,30 +116,29 @@ def eval_genomes(genomes, config):
 
 def run(config_file):
     # Load configuration.
-    config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
-                         neat.DefaultSpeciesSet, neat.DefaultStagnation,
-                         config_file)
+    config = neat.config.Config(neat.genome.DefaultGenome, neat.reproduction.DefaultReproduction,
+                            neat.species.DefaultSpeciesSet, neat.stagnation.DefaultStagnation,
+                            'config_cppn_xor')
 
     # Create the population, which is the top-level object for a NEAT run.
-    p = neat.population.Population(config)
-    # p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-4')
+    #p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-15')
 
     # Add a stdout reporter to show progress in the terminal.
-    p.add_reporter(neat.StdOutReporter(True))
+    pop = neat.population.Population(config)
     stats = neat.statistics.StatisticsReporter()
-    p.add_reporter(stats)
-    p.add_reporter(neat.Checkpointer(1000))
+    pop.add_reporter(stats)
+    pop.add_reporter(neat.reporting.StdOutReporter(True))
     #p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-299')
 
     # Run for up to 300 generations.
-    winner = p.run(eval_genomes, 300)
+    winner = pop.run(eval_genomes, 300)
 
     # Display the winning genome.
     print('\nBest genome:\n{!s}'.format(winner))
 
     # Show output of the most fit genome against training data.
     print('\nOutput:')
-    cppn = neat.nn.RecurrentNetwork.create(winner, config)
+    cppn = neat.nn.FeedForwardNetwork.create(winner, config)
     network = ESNetwork(sub, cppn, params)
     winner_net = network.create_phenotype_network(filename='es_hyperneat_winner.png') 
     input("Winner is found")

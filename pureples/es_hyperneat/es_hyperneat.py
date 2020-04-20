@@ -27,8 +27,8 @@ class ESNetwork:
         input_coordinates = self.substrate.input_coordinates
         output_coordinates = self.substrate.output_coordinates
 
-        input_nodes = range(len(input_coordinates))
-        output_nodes = range(len(input_nodes), len(input_nodes)+len(output_coordinates))
+        input_nodes = list(range(len(input_coordinates)))
+        output_nodes = list(range(len(input_nodes), len(input_nodes)+len(output_coordinates)))
         hidden_idx = len(input_coordinates)+len(output_coordinates)
 
         coordinates, indices, draw_connections, node_evals = [], [], [], []
@@ -44,7 +44,6 @@ class ESNetwork:
 
         # Where the magic happens.
         hidden_nodes, connections = self.es_hyperneat()
-
         # Map hidden coordinates to their IDs.
         for x, y in hidden_nodes:
             coords_to_id[x, y] = hidden_idx
@@ -52,6 +51,7 @@ class ESNetwork:
 
         # For every coordinate, check the connections and create a node with corresponding connections if appropriate.
         for (x, y), idx in iter(coords_to_id.items()):
+            
             for c in connections:
                 if c.x2 == x and c.y2 == y:
                     draw_connections.append(c)
@@ -61,7 +61,7 @@ class ESNetwork:
                         nodes[idx] = initial
                     else:
                         nodes[idx] = [(coords_to_id[c.x1, c.y1], c.weight)]
-
+        
         # Combine the indices with the connections/links forming node_evals used by the RecurrentNetwork.
         for idx, links in iter(nodes.items()):
             node_evals.append((idx, self.activation, sum, 0.0, 1.0, links))
@@ -69,6 +69,8 @@ class ESNetwork:
         # Visualize the network?
         if filename is not None:
             draw_es(coords_to_id, draw_connections, filename)
+
+        
         return neat.nn.RecurrentNetwork(input_nodes, output_nodes, node_evals)  # This is actually a feedforward network.
 
     # Recursively collect all weights for a given QuadPoint.
@@ -145,7 +147,6 @@ class ESNetwork:
         outputs = self.substrate.output_coordinates
         hidden_nodes, unexplored_hidden_nodes = set(), set()
         connections1, connections2, connections3 = set(), set(), set()
-
         for x, y in inputs:  # Explore from inputs.
             root = self.division_initialization((x, y), True)
             self.pruning_extraction((x, y), root, True)
