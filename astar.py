@@ -31,7 +31,7 @@ def astar(maze, start, end):
     open_list.append(start_node)
 
     # Loop until you find the end
-    while len(open_list) > 0 and len(closed_list) < 999:
+    while len(open_list) > 0 and len(closed_list) < 9999:
 
         # Get the current node
         current_node = open_list[0]
@@ -95,6 +95,7 @@ def astar(maze, start, end):
                 continue
             # Add the child to the open list
             open_list.append(child)
+
 
 grid = [[-1, 0, -1, 0, 0, 0], [0, 0, -1, 0, 2, 0], [0, 1, -1, 0, 0, 0], [1, 0, -1, 0, 0, -1], [-1, 0, -1, 0, 0, 0], [-1, 0, 0, 1, 0, 0]]
 astar(grid, (1,4), (2,1))

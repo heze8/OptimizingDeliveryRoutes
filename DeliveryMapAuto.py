@@ -98,9 +98,9 @@ LEFT = 3
 RIGHT = 4
 
 # Grid Settings
-SIZE_MAP = 7
+SIZE_MAP = 15
 NUM_RIDER = 1 # MAXIMUM RIDERS IS 8.
-NUM_DELIVERY = 6
+NUM_DELIVERY = 10
 # ACTIONS = [None, UP, DOWN, LEFT, RIGHT]
 # NUM_ACTION = len(ACTIONS)
 
@@ -178,29 +178,35 @@ class MultiAgentDeliveryEnv:
     # Update grid and rider_positions
     # Return rewards and end?
     def step(self, action_n):
+        destinationAction = self.destinationPos.pop(action_n)
+        self.destinations = len(self.destinationPos)
+    
         # First we "remove" the riders from the grid
         for i in range(NUM_RIDER):
             riderPos = self.rider_positions[i]
             self.grid[riderPos[0]][riderPos[1]] = ROAD_N
 
-        destinationAction = self.destinationPos.pop(action_n)
-        self.destinations = len(self.destinationPos)
+        
         
         reward = SIZE_MAP
 
         path = astar(self.grid, riderPos, destinationAction)
         if path == None:
             print(self.grid, riderPos, destinationAction)
-        distance = len(path) - 1
-        
+            distance = 9999
+        else:
+            distance = len(path) - 1
         reward -= distance
 
         self.grid[destinationAction[0]][destinationAction[1]] = RIDER_N[i]
         self.rider_positions[i] = destinationAction
 
-        self.steps += distance
+        self.steps += 1
            
         end = self.destinations == 0
+
+        if self.steps % 2 == 0:
+            self.destinationPos.append(get_random_tuple(1, getFreePositions(self.grid)).pop())
 
         return self.returnStateInfo(), reward, end
            

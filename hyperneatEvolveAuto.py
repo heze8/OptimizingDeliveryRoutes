@@ -18,7 +18,7 @@ from pureples.shared.visualize import draw_net
 from pureples.es_hyperneat.es_hyperneat import ESNetwork
 import random
 
-SIZE = 7
+SIZE = 15
 input_coordinates = []
 for i in range(SIZE):
     x = i * 1.9/(SIZE - 1) - 0.95
@@ -34,12 +34,12 @@ output_coordinates = [(0.0, 1.0)] #must me this coor or it bugs out
 sub = Substrate(input_coordinates, output_coordinates)
 
 params = {"initial_depth": 2,
-          "max_depth": 3,
-          "variance_threshold": 0.03,
+          "max_depth": 4,
+          "variance_threshold": 0.4,
           "band_threshold": 0.3,
           "iteration_level": 1,
           "division_threshold": 0.5,
-          "max_weight": 5.0,
+          "max_weight": 15.0,
           "activation": "sigmoid"}
 
 def convert(list): 
