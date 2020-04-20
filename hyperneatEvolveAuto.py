@@ -32,17 +32,16 @@ sub = Substrate(input_coordinates, output_coordinates)
 
 params = {"initial_depth": 1,
           "max_depth": 4,
-          "variance_threshold": 0.03,
+          "variance_threshold": 0.3,
           "band_threshold": 0.3,
           "iteration_level": 1,
           "division_threshold": 0.5,
           "max_weight": 15.0,
           "activation": "sigmoid"}
 
-def train(net, network, render):
+def train(net, network, render, env = MultiAgentDeliveryEnv()):
     episode_reward = 0 
     step = 1
-    env = MultiAgentDeliveryEnv()
     current_state = env.reset()
     done = False
     net.reset()
@@ -81,9 +80,8 @@ def eval_genome(genome, config):
     network = ESNetwork(sub, cppn, params)
     net = network.create_phenotype_network()
     episode_reward = 0
-    
+    runs = 10
     for i in range(runs):
-        random.seed(seeds[i])
         episode_reward += train(net, network, False)
 
     fitness = episode_reward/runs
@@ -94,7 +92,7 @@ def eval_genome(genome, config):
 def eval_genomes(genomes, config):
     best_net = (None, None, -9999)
     runs = 10
-    seeds = [random.randrange(0, 99999999999999) for i in range(runs)]
+    environments = [MultiAgentDeliveryEnv() for i in range(runs)]
 
     for genome_id, genome in genomes:
         cppn = neat.nn.RecurrentNetwork.create(genome, config)
@@ -104,8 +102,7 @@ def eval_genomes(genomes, config):
         genome.fitness = 0
 
         for i in range(runs):
-            random.seed(seeds[i])
-            episode_reward += train(net, network, False)
+            episode_reward += train(net, network, False, environments[i])
 
         fitness = episode_reward/runs
         if fitness > best_net[2]:
@@ -123,12 +120,12 @@ def run(config_file):
                          config_file)
 
     # Create the population, which is the top-level object for a NEAT run.
-    p = neat.Population(config)
+    p = neat.population.Population(config)
     # p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-4')
 
     # Add a stdout reporter to show progress in the terminal.
     p.add_reporter(neat.StdOutReporter(True))
-    stats = neat.StatisticsReporter()
+    stats = neat.statistics.StatisticsReporter()
     p.add_reporter(stats)
     p.add_reporter(neat.Checkpointer(1000))
     #p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-299')

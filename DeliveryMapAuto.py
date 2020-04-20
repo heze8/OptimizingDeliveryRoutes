@@ -182,7 +182,7 @@ class MultiAgentDeliveryEnv:
         # First we "remove" the riders from the grid
         for i in range(NUM_RIDER):
             riderPos = self.rider_positions[i]
-            self.grid[riderPos] = ROAD_N
+            self.grid[riderPos[0]][riderPos[1]] = ROAD_N
 
         destinationAction = self.destinationPos.pop(action_n)
         self.destinations = len(self.destinationPos)
@@ -190,11 +190,13 @@ class MultiAgentDeliveryEnv:
         reward = NUM_DELIVERY * SIZE_MAP * SIZE_MAP
 
         path = astar(self.grid, riderPos, destinationAction)
+        if path == None:
+            print(self.grid, riderPos, destinationAction)
         distance = len(path) - 1
         
         reward -= distance
 
-        self.grid[destinationAction] = RIDER_N[i]
+        self.grid[destinationAction[0]][destinationAction[1]] = RIDER_N[i]
         self.rider_positions[i] = destinationAction
            
         end = self.destinations == 0
@@ -229,11 +231,13 @@ class MultiAgentDeliveryEnv:
         for des in self.destinationPos:
             x = np.asarray(self.grid)
             x[des] = -2
-            x = x.reshape(SIZE_MAP, SIZE_MAP, 1)
+            x = x.flatten()
             riderPos = self.rider_positions[0]
             path = astar(self.grid, riderPos, des)
+            if path == None:
+                print(self.grid, riderPos, des)
             distance = len(path) - 1
-            x = x.append(distance)
+            x = np.append(x, distance)
             states.append(x)
 
         return states
