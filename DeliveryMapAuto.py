@@ -5,6 +5,8 @@ import cv2
 from RoadGeneration import generate_grid_with_roads, getFreePositions
 from astar import astar
 import sys
+from google.colab.patches import cv2_imshow
+
 
 class Rider:
     def __init__(self, size):
@@ -253,12 +255,13 @@ class MultiAgentDeliveryEnv:
                 string += str(self.grid[row][col]) + " "
             string += "\n"
         return string
-    
+
+
     # Displays the grid in a beautiful window
     def render(self, delay=1):
         img = self.get_image()
         img = cv2.resize(np.array(img), (500, 500), interpolation=cv2.INTER_NEAREST)  
-        cv2.imshow("image", np.array(img))  
+        cv2_imshow("image", np.array(img))  
         cv2.waitKey(delay)
 
     def get_image(self):
