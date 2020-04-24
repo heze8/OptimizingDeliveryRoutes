@@ -31,7 +31,7 @@ def astar(maze, start, end):
     open_list.append(start_node)
 
     # Loop until you find the end
-    while len(open_list) > 0 and len(closed_list) < 9999:
+    while len(open_list) > 0 and len(closed_list) < 99999:
 
         # Get the current node
         current_node = open_list[0]

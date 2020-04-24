@@ -4,6 +4,7 @@ from PIL import Image
 import cv2
 from RoadGeneration import generate_grid_with_roads, getFreePositions
 from astar import astar
+import sys
 
 class Rider:
     def __init__(self, size):
@@ -98,19 +99,19 @@ LEFT = 3
 RIGHT = 4
 
 # Grid Settings
-SIZE_MAP = 15
+SIZE_MAP = 20
 NUM_RIDER = 1 # MAXIMUM RIDERS IS 8.
 NUM_DELIVERY = 10
 # ACTIONS = [None, UP, DOWN, LEFT, RIGHT]
 # NUM_ACTION = len(ACTIONS)
 
 # Maximum number of steps before ending
-MAX_STEPS = 100
+MAX_STEPS = 1000
 
 # Objects in Grid
 ROAD_N = 0
 DESTINATION_N = 1
-RIDER_N = [2, 3, 4, 5, 6, 7, 8, 9]
+RIDER_N = 2
 UNPASSABLE_N = -1
 
 COLOURS = { ROAD_N: (255, 255, 255),
@@ -138,8 +139,9 @@ STAGNANT = -1
     MultiAgentDeliveryEnv CLASS
 """
 class MultiAgentDeliveryEnv:
-    def __init__(self):
+    def __init__(self, numRiders):
         self.destinationPos = []
+        self.num_riders = numRiders
         self.grid, self.rider_positions = self.initialize_grid()
         self.destinations = NUM_DELIVERY
         self.action_space = []
@@ -152,19 +154,19 @@ class MultiAgentDeliveryEnv:
         self.grid, self.rider_positions = self.initialize_grid()
         self.destinations = NUM_DELIVERY
         self.steps = 0
-        return self.returnStateInfo()
+        return self.returnStateInfo(0)
 
     # Initialise random positions for delivery
     # Initialise one random position for riders to start in
     # Delivery positions and rider positions guaranteed to not be in the same box
     def initialize_grid(self):
         grid, free_positions = generate_grid_with_roads(SIZE_MAP, UNPASSABLE_N)
-        positions = get_random_tuple(NUM_DELIVERY + NUM_RIDER, free_positions)
+        positions = get_random_tuple(NUM_DELIVERY + self.num_riders, free_positions)
         rider_positions = list()
         
-        for i in range(NUM_RIDER):
+        for i in range(self.num_riders):
             position = positions.pop()
-            grid[position[0]][position[1]] = RIDER_N[i] # Assign number to matrix with last rider's index
+            grid[position[0]][position[1]] = RIDER_N # Assign number to matrix with last rider's index
             rider_positions.append(position)
         
         for i in range(NUM_DELIVERY):
@@ -193,24 +195,56 @@ class MultiAgentDeliveryEnv:
         path = astar(self.grid, riderPos, destinationAction)
         if path == None:
             print(self.grid, riderPos, destinationAction)
-            distance = 9999
+            distance = SIZE_MAP
         else:
             distance = len(path) - 1
         reward -= distance
 
-        self.grid[destinationAction[0]][destinationAction[1]] = RIDER_N[i]
+        self.grid[destinationAction[0]][destinationAction[1]] = RIDER_N
         self.rider_positions[i] = destinationAction
 
         self.steps += 1
            
         end = self.destinations == 0
 
-        if self.steps % 2 == 0:
-            newDes = get_random_tuple(1, getFreePositions(self.grid)).pop()
-            self.destinationPos.append(newDes)
-            self.grid[newDes[0]][newDes[1]] = 1
+        
+        newDes = get_random_tuple(1, getFreePositions(self.grid)).pop()
+        self.destinationPos.append(newDes)
+        self.grid[newDes[0]][newDes[1]] = 1
 
-        return self.returnStateInfo(), reward, end
+        return self.returnStateInfo(), reward, end, distance
+
+    def stepM(self, action_n, rider):
+        destinationAction = self.destinationPos.pop(action_n)
+        self.destinations = len(self.destinationPos)
+    
+        # First we "remove" the riders from the grid
+    
+        riderPos = self.rider_positions[rider]
+        self.grid[riderPos[0]][riderPos[1]] = ROAD_N
+        
+        reward = SIZE_MAP
+
+        path = astar(self.grid, riderPos, destinationAction)
+        if path == None:
+            print(self.grid, riderPos, destinationAction)
+            distance = SIZE_MAP
+        else:
+            distance = len(path) - 1
+        reward -= distance
+
+        self.grid[destinationAction[0]][destinationAction[1]] = RIDER_N
+        self.rider_positions[rider] = destinationAction
+
+        self.steps += 1
+           
+        end = self.destinations == 0
+
+        newDes = get_random_tuple(1, getFreePositions(self.grid)).pop()
+        self.destinationPos.append(newDes)
+        self.grid[newDes[0]][newDes[1]] = 1
+
+        return self.returnStateInfo(rider), reward, end, distance
            
     def __str__(self):
         string = ""
@@ -235,17 +269,21 @@ class MultiAgentDeliveryEnv:
         img = Image.fromarray(env, 'RGB')
         return img
     
-    def returnStateInfo(self):
+    def returnStateInfo(self, rider):
         states = []
         for des in self.destinationPos:
+            riderPos = self.rider_positions[rider]
             x = np.asarray(self.grid)
             x[des] = -2
+            x[riderPos] = 3
             x = x.flatten()
             riderPos = self.rider_positions[0]
             path = astar(self.grid, riderPos, des)
             if path == None:
                 print(self.grid, riderPos, des)
-            distance = len(path) - 1
+                distance = SIZE_MAP
+            else:
+                distance = len(path) - 1
             x = np.append(x, distance)
             states.append(x)
 

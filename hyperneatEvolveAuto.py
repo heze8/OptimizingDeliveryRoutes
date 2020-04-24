@@ -17,8 +17,9 @@ from pureples.shared.substrate import Substrate
 from pureples.shared.visualize import draw_net
 from pureples.es_hyperneat.es_hyperneat import ESNetwork
 import random
+import heapq
 
-SIZE = 15
+SIZE = 20
 input_coordinates = []
 for i in range(SIZE):
     x = i * 1.9/(SIZE - 1) - 0.95
@@ -45,14 +46,59 @@ params = {"initial_depth": 2,
 def convert(list): 
     return tuple(float(i)/2 for i in list) 
 
-def train(net, network, render, env = MultiAgentDeliveryEnv()):
-    episode_reward = 0 
-    step = 1
+# def train(net, network, render, env = MultiAgentDeliveryEnv()):
+#     episode_reward = 0 
+#     step = 1
+#     current_state = env.reset()
+#     done = False
+#     net.reset()
+    
+#     while not done and step < 999:
+#         numAction = []
+#         for action in current_state:
+#             action = np.append(action, [1]) #bias
+#             action = convert(action)
+#             for k in range(network.activations):
+#                 o = net.activate(action)
+#             numAction.append(o)
+#         action = np.argmax(numAction)
+#         new_state, reward, done = env.step(action)
+#         if render:
+#             env.render(500) 
+#             print(action)
+#         episode_reward += reward
+
+#         current_state = new_state
+#         step += 1
+
+#     if render:
+#         print(episode_reward)
+#     # Append episode reward to a list and log stats (every given number of episodes)
+#     return episode_reward
+
+def trainMultiple(genomes, config, render, env):
+    step = 0
     current_state = env.reset()
     done = False
-    net.reset()
-    
-    while not done and step < 999:
+    nets = []
+    networks = []
+    rewards = np.zeros(len(genomes))
+
+    for genome_id, genome in genomes:
+        cppn = neat.nn.FeedForwardNetwork.create(genome, config)
+        network = ESNetwork(sub, cppn, params)
+        net = network.create_phenotype_network()
+        nets.append(net)
+        networks.append(network)
+
+    pq = []
+    for i in range(len(nets)):    
+        heapq.heappush(pq, (0, i))
+
+    while not done and step < 1000:
+        time, index = heapq.heappop(pq)
+        network = networks[index]
+        net = nets[index]
         numAction = []
         for action in current_state:
             action = np.append(action, [1]) #bias
@@ -61,57 +107,76 @@ def train(net, network, render, env = MultiAgentDeliveryEnv()):
                 o = net.activate(action)
             numAction.append(o)
         action = np.argmax(numAction)
-        new_state, reward, done = env.step(action)
+        new_state, reward, done, distance = env.stepM(action, index)
         if render:
-            env.render(500) 
+            env.render(100) 
             print(action)
-        episode_reward += reward
+        rewards[index] += reward
 
+        heapq.heappush(pq, (time + distance, index))
         current_state = new_state
         step += 1
 
     if render:
-        print(episode_reward)
+        print(rewards)
     # Append episode reward to a list and log stats (every given number of episodes)
-    return episode_reward
+    return rewards
 
-def eval_genome(genome, config):
-    cppn = neat.nn.FeedForwardNetwork.create(genome, config)
-    network = ESNetwork(sub, cppn, params)
-    net = network.create_phenotype_network()
-    episode_reward = 0
-    runs = 10
-    for i in range(runs):
-        episode_reward += train(net, network, False)
+# def eval_genome(genome, config):
+#     cppn = neat.nn.FeedForwardNetwork.create(genome, config)
+#     network = ESNetwork(sub, cppn, params)
+#     net = network.create_phenotype_network()
+#     episode_reward = 0
+#     runs = 10
+#     for i in range(runs):
+#         episode_reward += train(net, network, False)
 
-    fitness = episode_reward/runs
-    # Append episode reward to a list and log stats (every given number of episodes)
-    return fitness
+#     fitness = episode_reward/runs
+#     # Append episode reward to a list and log stats (every given number of episodes)
+#     return fitness
  
 
-def eval_genomes(genomes, config):
-    best_net = (None, None, -9999)
+# def eval_genomes(genomes, config):
+#     best_net = (None, None, -9999)
+#     runs = 10
+#     environments = [MultiAgentDeliveryEnv() for i in range(runs)]
+
+#     for genome_id, genome in genomes:
+
+#         cppn = neat.nn.FeedForwardNetwork.create(genome, config)
+#         network = ESNetwork(sub, cppn, params)
+#         net = network.create_phenotype_network()
+#         episode_reward = 0
+#         genome.fitness = 0
+
+#         for i in range(runs):
+#             episode_reward += train(net, network, False, environments[i])
+
+#         fitness = episode_reward/runs
+#         if fitness > best_net[2]:
+#             best_net = (net, network, fitness)
+#         # Append episode reward to a list and log stats (every given number of episodes)
+#         genome.fitness += fitness
+#     for i in range(4):
+#         train(best_net[0], best_net[1], True)
+
+def eval_multipleGenomes(genomes, config):
     runs = 10
-    environments = [MultiAgentDeliveryEnv() for i in range(runs)]
+    environments = [MultiAgentDeliveryEnv(len(genomes)) for i in range(runs)]
+    rewards = np.zeros(len(genomes))
 
+    for i in range(runs):
+        rewards += trainMultiple(genomes, config, False, environments[i])
+
+    rewards = rewards/runs
+    i = 0
     for genome_id, genome in genomes:
-
-        cppn = neat.nn.FeedForwardNetwork.create(genome, config)
-        network = ESNetwork(sub, cppn, params)
-        net = network.create_phenotype_network()
-        episode_reward = 0
+        fitness = rewards[i]
         genome.fitness = 0
-
-        for i in range(runs):
-            episode_reward += train(net, network, False, environments[i])
-
-        fitness = episode_reward/runs
-        if fitness > best_net[2]:
-            best_net = (net, network, fitness)
-        # Append episode reward to a list and log stats (every given number of episodes)
         genome.fitness += fitness
-    for i in range(4):
-        train(best_net[0], best_net[1], True)
+        i+=1
+
+    trainMultiple(genomes, config, True, environments[0])
 
 
 def run(config_file):
@@ -132,7 +197,7 @@ def run(config_file):
     #p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-299')
 
     # Run for up to 300 generations.
-    winner = pop.run(eval_genomes, 300)
+    winner = pop.run(eval_multipleGenomes, 300)
 
     # Display the winning genome.
     print('\nBest genome:\n{!s}'.format(winner))
